@@ -445,7 +445,10 @@ class ValueIteration_ND:
                 if action_isok:
                     if self.n_dim == 2:
                         J_next = J_interpol(x_next[0], x_next[1])
-
+                    elif self.n_dim == 3:
+                        J_next = J_interpol([x_next[0], x_next[1], x_next[2]])
+                    else:
+                        J_next = J_interpol([x_next[0], x_next[1], x_next[2], x_next[3]])
 
                     # Cost-to-go of a given action
                     y = self.sys.h(x, u, 0)
