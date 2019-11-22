@@ -445,6 +445,8 @@ class ValueIteration_ND:
                 if action_isok:
                     if self.n_dim == 2:
                         J_next = J_interpol(x_next[0], x_next[1])
+                    else:
+                        J_next = J_interpol(x_next)
 
 
                     # Cost-to-go of a given action

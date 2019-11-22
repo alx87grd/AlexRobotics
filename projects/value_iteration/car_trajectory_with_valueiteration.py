@@ -50,10 +50,10 @@ vi = valueiteration.ValueIteration_ND( grid_sys , cf )
 vi.uselookuptable = True
 vi.initialize()
 #if load_data:
-vi.load_data('car_vi_7')
-# vi.compute_steps(30, plot=True, maxJ=6000)
+#vi.load_data('car_vi_7')
+vi.compute_steps(30, plot=True, maxJ=6000)
 #if save_data:
-vi.save_data('car_vi')
+#vi.save_data('car_vi')
 
 vi.assign_interpol_controller()
 
