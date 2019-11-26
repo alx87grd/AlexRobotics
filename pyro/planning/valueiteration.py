@@ -6,6 +6,7 @@ Created on Wed Jul 12 12:09:37 2017
 """
 
 import sys
+import os
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -708,13 +709,12 @@ class ValueIteration_ND:
         """ Save optimal controller policy and cost to go """
 
         try:
-
             self.J = np.load(prefix + name + '_J' + '.npy')
             self.action_policy = np.load(prefix + name + '_a' + '.npy').astype(int)
 
-        except:
-
-            print('Failed to load DP data ', sys.exc_info()[0])
+        except IOError:
+            type, value, traceback = sys.exc_info()
+            print('Error opening %s: %s' % (value.filename, value.strerror))
 
     ################################
     def save_data(self, name='DP_data', prefix=''):
