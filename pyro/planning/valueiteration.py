@@ -711,10 +711,15 @@ class ValueIteration_ND:
         try:
             self.J = np.load(prefix + name + '_J' + '.npy')
             self.action_policy = np.load(prefix + name + '_a' + '.npy').astype(int)
+            print('File successfully loaded')
 
         except IOError:
             type, value, traceback = sys.exc_info()
             print('Error opening %s: %s' % (value.filename, value.strerror))
+
+        # returns filled array to signal that the trajectory has been loaded
+        # used in Slash library
+        return [1]
 
     ################################
     def save_data(self, name='DP_data', prefix=''):
