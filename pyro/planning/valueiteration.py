@@ -544,15 +544,11 @@ class ValueIteration_ND:
         # handle OOB inputs by inputting closest value 
         # OR setting it to 0
         # try and figure out what works best for actual physical pathfinding
-        for i in range(self.sys.x_ub):
-            for j in len(x):
-                if x[j] > self.sys.x_ub[i]:
-                    x[j] = self.sys.x_ub[i]
-
-        for i in range(self.sys.x_lb):
-            for j in len(x):
-                if x[j] < self.sys.x_lb[i]:
-                    x[j] = self.sys.x_lb[i]
+        for i in range(self.sys.n):
+            if x[i] < self.sys.x_lb[i]:
+                x[i] = self.sys.x_lb[i]
+            if x[i] > self.sys.x_ub[i]:
+                x[i] = self.sys.x_ub[i]
 
         # for all inputs
         for k in range(self.sys.m):

@@ -23,8 +23,8 @@ sys  = vehicle.KinematicProtoCarModelwithObstacles()
 # Planning
 
 # Set domain
-sys.x_ub = np.array([+3.5, +0.4, +0.3])
-sys.x_lb = np.array([-0.5, -0.1, -0.3])
+sys.x_ub = np.array([+3.5, +1, +0.3])
+sys.x_lb = np.array([-2, -1, -0.3])
 
 sys.u_ub = np.array([+1, +1])
 sys.u_lb = np.array([-1, -1])
@@ -51,10 +51,10 @@ vi.uselookuptable = True
 vi.initialize()
 
 #if load_data:
-vi.load_data('car_vi_racecar_proto_scale_8')
-# vi.compute_steps(100, plot=True, maxJ=100)
+vi.load_data('car_vi_racecar_proto_scale_9')
+# vi.compute_steps(50, plot=True, maxJ=100)
 #if save_data:
-# vi.save_data('car_vi_racecar_proto_scale_8')
+# vi.save_data('car_vi_racecar_proto_scale_9')
 
 vi.assign_interpol_controller()
 
@@ -70,4 +70,4 @@ tf   = 5
 
 sim = cl_sys.compute_trajectory(x0, tf, 10001, 'euler')
 cl_sys.get_plotter().plot(sim, 'xu')
-cl_sys.get_animator().animate_simulation(sim, save=True, file_name='car_proto_scale')
+cl_sys.get_animator().animate_simulation(sim, save=True, file_name='car_proto_scale_2')
