@@ -1178,7 +1178,7 @@ class KinematicProtoCarModelwithObstacles(KinematicProtoCarModel):
     def __init__(self):
         """ """
         # initialize standard params
-        KinematicCarModel.__init__(self)
+        KinematicProtoCarModel.__init__(self)
 
         # Labels
         self.name = 'Kinematic Bicyle Model with Obstacles'

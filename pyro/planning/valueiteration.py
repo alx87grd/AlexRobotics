@@ -541,6 +541,12 @@ class ValueIteration_ND:
 
         u = np.zeros(self.sys.m)
 
+        for i in range(self.sys.n):
+            if x[i] < self.sys.x_lb[i]:
+                x[i] = self.sys.x_lb[i]
+            if x[i] > self.sys.x_ub[i]:
+                x[i] = self.sys.x_ub[i]
+
         # for all inputs
         for k in range(self.sys.m):
             if self.n_dim == 2:
