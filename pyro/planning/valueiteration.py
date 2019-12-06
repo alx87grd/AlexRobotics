@@ -541,6 +541,19 @@ class ValueIteration_ND:
 
         u = np.zeros(self.sys.m)
 
+        # handle OOB inputs by inputting closest value 
+        # OR setting it to 0
+        # try and figure out what works best for actual physical pathfinding
+        for i in range(self.sys.x_ub):
+            for j in len(x):
+                if x[j] > self.sys.x_ub[i]:
+                    x[j] = self.sys.x_ub[i]
+
+        for i in range(self.sys.x_lb):
+            for j in len(x):
+                if x[j] < self.sys.x_lb[i]:
+                    x[j] = self.sys.x_lb[i]
+
         # for all inputs
         for k in range(self.sys.m):
             if self.n_dim == 2:
