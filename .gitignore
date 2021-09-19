@@ -1,7 +1,55 @@
-# Compiled source #
+# Python-related ignores #
 ###################
+*.py[cod]
+*.egg-info/
+*.egg
 *.pyc
+__pycache__/
 
 # Output fig or video, etc #
 ############################
 output/
+
+# Editor Config #
+.vscode/
+.spyproject/
+.spyderproject/
+
+# OS Files #
+.DS_Store
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/pyro.iml
+.idea/vcs.xml
+.pytest_cache/v/cache/lastfailed
+.pytest_cache/v/cache/nodeids
+.idea/other.xml
+*.html
+*.png
+.idea/workspace.xml
+build/
+traj_optim_run1_results_0011.npy
+traj_optim_run1_results_0010.npy
+traj_optim_run1_results_0009.npy
+traj_optim_run1_results_0008.npy
+traj_optim_run1_results_0007.npy
+traj_optim_run1_results_0006.npy
+traj_optim_run1_results_0005.npy
+traj_optim_run1_results_0004.npy
+traj_optim_run1_results_0003.npy
+traj_optim_run1_results_0002.npy
+traj_optim_run1_results_0001.npy
+traj_optim_run1_results_0000.npy
+traj_optim_run1_results.pickle
+trajresults/solution_with_trust_const2.npy
+trajresults/res4_run2_0008.npy
+trajresults/res4_run2_0007.npy
+trajresults/res4_run2_0006.npy
+trajresults/res4_run2_0005.npy
+trajresults/res4_run2_0004.npy
+trajresults/res4_run2_0003.npy
+trajresults/res4_run2_0002.npy
+trajresults/res4_run2_0001.npy
+trajresults/res4_run2_0000.npy
+trajresults/res4_run2.pickle

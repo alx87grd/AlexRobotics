@@ -1,0 +1,1 @@
+# -*- coding: utf-8 -*-"""Created on Jun 2 2021@author: Alex"""from pyro.dynamic import massspringdampersys = massspringdamper.TwoMass()sys.m1 = 2sys.m2 = 3sys.k1 = 5sys.k2 = 2sys.b1 = 0.1sys.b2 = 0.2sys.compute_ABCD()sys.plot_linearized_bode()sys.plot_linearized_pz_map()sys.x0[1] = 1sys.plot_trajectory()sys.animate_simulation()

@@ -1,0 +1,1 @@
+# -*- coding: utf-8 -*-"""Created on Jun 2 2021@author: Alex"""from pyro.dynamic import massspringdampersys = massspringdamper.ThreeMass()sys.animate_eigen_mode(0)sys.animate_eigen_mode(2)sys.animate_eigen_mode(4)
