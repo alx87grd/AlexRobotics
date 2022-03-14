@@ -18,7 +18,7 @@ from pyro.analysis import costfunction
 
 
 #################################################################
-def synthesize_lqr_controller( ss , cf ):
+def synthesize_lqr_controller( ss , cf , xbar = None, ubar = None):
     """
 
     Compute the optimal linear controller minimizing the quadratic cost:
@@ -37,6 +37,8 @@ def synthesize_lqr_controller( ss , cf ):
     ----------
     sys : `StateSpaceSystem` instance
     cf  : "quadratic cost function" instance
+    xbar: offset on state feedback
+    ubar: offset on control input
         
     Returns
     -------
@@ -53,8 +55,51 @@ def synthesize_lqr_controller( ss , cf ):
     R_inv = np.linalg.inv( cf.R )
     K     = np.dot( R_inv  , BTS )
     
+    # Define linear controller
     ctl = linear.ProportionalController( K )
     ctl.name = 'LQR controller'
+    
+    # Offsets on input and ouputs
+    if xbar is not None:
+        ctl.ybar = xbar  # Offset on the sensor signal
+        
+    if ubar is not None:
+        ctl.ubar = ubar  # Offset on the control input
+    
+    
+    return ctl
+
+
+#################################################################
+def linearize_and_synthesize_lqr_controller( sys , cf ):
+    """
+
+    Compute the optimal linear controller minimizing the quadratic cost:
+        
+    J = int ( xQx + uRu ) dt = xSx
+    
+    with control law:
+        
+    u = K x
+    
+    Note:
+    ---------
+    Controller assume y = x  (output is directly the state vector)
+
+    Parameters
+    ----------
+    sys : `ContinuousSystem` instance
+    cf  : "quadratic cost function" instance
+        
+    Returns
+    -------
+    instance of `Proportionnal Controller`
+
+    """
+    
+    ss  = statespace.linearize( sys , 0.01 )
+    
+    ctl = synthesize_lqr_controller( ss , cf , sys.xbar , sys.ubar )
     
     return ctl
     
@@ -72,11 +117,10 @@ if __name__ == "__main__":
     
     from pyro.dynamic.pendulum      import DoublePendulum
     from pyro.analysis.costfunction import QuadraticCostFunction
-    from pyro.dynamic.statespace    import linearize
     
     sys = DoublePendulum()
     
-    ss  = linearize( sys , 0.01 )
+    ss  = statespace.linearize( sys , 0.01 )
     
     cf  = QuadraticCostFunction.from_sys( sys )
     

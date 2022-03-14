@@ -6,6 +6,7 @@ Created on Mon Oct 22 08:40:31 2018
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 from pyro.dynamic import system
 
@@ -143,6 +144,77 @@ class StaticController():
         cl_sys = ClosedLoopSystem( sys , self )
         
         return cl_sys
+    
+    
+    #############################
+    def plot_control_law(self, i=0, j=1, k=0, t=0, n = 10, sys = None):
+        """ 
+        k = control input index to plot
+        i = state to use as the x-axis
+        j = state to use as the y-axis
+        n = grid resolution
+        sys can be passed for state label unit and range
+        """
+        
+        # Extract sys info
+        
+        if sys is not None:
+            xname = sys.state_label[i] + ' ' + sys.state_units[i]
+            yname = sys.state_label[j] + ' ' + sys.state_units[j]
+            xmax  = sys.x_ub[i]
+            xmin  = sys.x_lb[i]
+            ymax  = sys.x_ub[j]
+            ymin  = sys.x_lb[j]
+            xbar  = sys.xbar
+            
+        else:
+            xname = 'state x[%i]'%i
+            yname = 'state x[%i]'%j
+            xmax  = 10
+            xmin  = -10
+            ymax  = 10
+            ymin  = -10
+            xbar  = np.zeros( self.p )
+            
+        # Computing
+        
+        x = np.linspace( xmin  , xmax  , n )
+        y = np.linspace( ymin  , ymax  , n )
+        
+        X, Y = np.meshgrid( x, y)
+        
+        U = np.zeros((n,n)) # control action table
+        
+        for l in range(n):
+            for m in range(n):
+                
+                # Actual states
+                x  = np.copy( xbar )   # default value for all states
+                x[ i ] = X[l, m]
+                x[ j ] = Y[l, m]
+                
+                # Control action
+                u = self.cbar( x , t ) 
+                
+                U[l, m] = u[k] # extract control input element k
+                
+        
+        # Ploting
+        fig = plt.figure(figsize=(4, 4),dpi=300, frameon=True)
+        fig.canvas.manager.set_window_title('Control law for u[%i]'%i)
+        ax  = fig.add_subplot(1,1,1)
+        
+        plt.ylabel(yname, fontsize = 10 )
+        plt.xlabel(xname, fontsize = 10 )
+        
+        im1 = plt.pcolormesh( X , Y , U, shading='gouraud')
+        
+        plt.axis([xmin,xmax,ymin,ymax])
+    
+        plt.colorbar()
+        plt.grid(True)
+        plt.tight_layout() 
+        plt.show()
     
 
 

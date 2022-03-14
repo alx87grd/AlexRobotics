@@ -8,7 +8,7 @@ Created on Fri Aug 07 11:51:55 2015
 import numpy as np
 
 from scipy.integrate import odeint
-
+from scipy.interpolate import interp1d
 
 ##########################################################################
 # Trajectory 
@@ -150,6 +150,55 @@ class Trajectory():
             dJ = None
 
         new_traj = Trajectory(x, u, t, dx, y, r, J, dJ)
+        
+        return new_traj
+    
+    
+    ###########################
+    def generate_interpol_functions(self):
+        """ """
+        
+        # Create interpol functions
+        self.inter_t2x   = interp1d(self.t,self.x.T)
+        self.inter_t2u   = interp1d(self.t,self.u.T)
+        self.inter_t2dx  = interp1d(self.t,self.dx.T)
+        self.inter_t2y   = interp1d(self.t,self.y.T)
+        
+        if self.r is not None:
+            self.inter_t2r = interp1d(self.t,self.r.T)
+            
+        if self.J is not None:
+            self.inter_t2J  = interp1d(self.t,self.J)
+            self.inter_t2dJ = interp1d(self.t,self.dJ)
+    
+    
+    ############################
+    def re_sample(self, n ):
+        """ Return new traj with interpolated new time vector """
+        
+        self.generate_interpol_functions()
+        
+        ti = self.t[0]
+        tf = self.t[-1]
+        
+        t = np.linspace( ti, tf, n)
+        
+        x  = np.zeros(( n, self.x.shape[1] ))
+        u  = np.zeros(( n, self.u.shape[1] ))
+        dx = np.zeros(( n, self.dx.shape[1] ))
+        y  = np.zeros(( n, self.y.shape[1] ))
+        #r  = np.zeros(( n, self.r.shape[1] ))
+        
+        for i in range(n):
+            
+            x[i,:]  = self.inter_t2x(  t[i] )
+            u[i,:]  = self.inter_t2u(  t[i] )
+            dx[i,:] = self.inter_t2dx( t[i] )
+            y[i,:]  = self.inter_t2y(  t[i] )
+            #r[i,:]  = self.inter_t2r( t[i] )
+
+
+        new_traj = Trajectory(x, u, t, dx, y)
         
         return new_traj
     
@@ -315,7 +364,7 @@ class CLosedLoopSimulator(Simulator):
         r = traj.u.copy() # reference is input of combined sys
         u = np.zeros((self.n,self.cds.plant.m))
 
-        # Compute internal input signal_proc
+        # Compute internal input
         for i in range(self.n):
 
             ri = r[i,:]

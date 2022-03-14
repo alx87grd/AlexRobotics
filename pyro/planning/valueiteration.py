@@ -6,14 +6,11 @@ Created on Wed Jul 12 12:09:37 2017
 """
 
 import sys
-import os
 
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import RectBivariateSpline as interpol2D
 from scipy.interpolate import RegularGridInterpolator as rgi
-
-from mpl_toolkits.mplot3d import Axes3D
 
 from pyro.control import controller
 
@@ -25,10 +22,10 @@ from pyro.control import controller
 
 class ViController(controller.StaticController):
     """ 
-    Simple proportionnal compensator
+    Feedback controller
     ---------------------------------------
-    r  : reference signal_proc vector  k x 1
-    y  : sensor signal_proc vector     m x 1
+    r  : reference signal vector  k x 1
+    y  : sensor signal vector     m x 1
     u  : control inputs vector    p x 1
     t  : time                     1 x 1
     ---------------------------------------
@@ -756,8 +753,8 @@ class ValueIteration_ND:
         plt.draw()
         plt.pause(0.001)
 
-        ################################
-
+        
+    ################################
     def plot_3D_policy(self, i=0):
         """ print graphic """
 
@@ -767,19 +764,30 @@ class ValueIteration_ND:
         yname = self.sys.state_label[1] + ' ' + self.sys.state_units[1]
 
         policy_plot = self.u_policy_grid[i].copy()
-        print(policy_plot.shape)
 
         self.fig1 = plt.figure()
         self.fig1.canvas.manager.set_window_title('Policy for u[%i]' % i)
         self.ax1 = self.fig1.gca(projection='3d')
 
-        plot = policy_plot.T if self.n_dim == 2 else policy_plot[..., 0].T
+        if self.n_dim == 2:
+            plot = policy_plot.T
+            
+        elif self.n_dim == 3:
+            plot = policy_plot[..., 0].T
+            
+        elif self.n_dim == 4:
+            plot = policy_plot[...,0,0].T
+            
+        else:
+            raise NotImplementedError()
+            
         plt.ylabel(yname, fontsize=self.fontsize)
         plt.xlabel(xname, fontsize=self.fontsize)
-        X = plot[:, 0]
-        Y = plot[:, 1]
-        Z = plot[:, 2]
-        self.ax1.plot_trisurf(X, Y, Z)
+        x = self.grid_sys.xd[0]
+        y = self.grid_sys.xd[1]
+        X, Y = np.meshgrid(x, y)
+        Z = plot
+        self.ax1.plot_surface(X, Y, Z)
 
         plt.axis([self.sys.x_lb[0],
               self.sys.x_ub[0],
@@ -790,16 +798,57 @@ class ValueIteration_ND:
 
         plt.draw()
         plt.pause(1)
+        
+    ################################
+    def plot_3D_cost(self):
+        """ print graphic """
 
-        ################################
+        xname = self.sys.state_label[0] + ' ' + self.sys.state_units[0]
+        yname = self.sys.state_label[1] + ' ' + self.sys.state_units[1]
 
+        cost_plot = self.J.copy()
+
+        self.fig1 = plt.figure()
+        self.fig1.canvas.manager.set_window_title('Cost-to-go')
+        self.ax1 = self.fig1.gca(projection='3d')
+
+        if self.n_dim == 2:
+            plot = cost_plot.T
+            
+        elif self.n_dim == 3:
+            plot = cost_plot[..., 0].T
+            
+        elif self.n_dim == 4:
+            plot = cost_plot[...,0,0].T
+            
+        else:
+            raise NotImplementedError()
+            
+        plt.ylabel(yname, fontsize=self.fontsize)
+        plt.xlabel(xname, fontsize=self.fontsize)
+        x = self.grid_sys.xd[0]
+        y = self.grid_sys.xd[1]
+        X, Y = np.meshgrid(x, y)
+        Z = plot
+        self.ax1.plot_surface(X, Y, Z)
+
+        plt.axis([self.sys.x_lb[0],
+              self.sys.x_ub[0],
+              self.sys.x_lb[1],
+              self.sys.x_ub[1]])
+        
+        plt.show()
+
+
+        
+    ################################
     def load_data(self, name='DP_data', prefix=''):
         """ Save optimal controller policy and cost to go """
 
         try:
             self.J = np.load(prefix + name + '_J' + '.npy')
             self.action_policy = np.load(prefix + name + '_a' + '.npy').astype(int)
-            print('File successfully loaded')
+            print('Data loaded from file:',name)
 
         except IOError:
             type, value, traceback = sys.exc_info()

@@ -81,7 +81,7 @@ class SingleMass( statespace.StateSpaceSystem ):
         """
         l = self.l1 * 2
         
-        domain  = [ (-l,l) , (-l,l) , (-l,l) ]#  
+        domain  = [ (-l+self.l1,l+self.l1) , (-l,l) , (-l,l) ]#  
                 
         return domain
     
@@ -156,7 +156,7 @@ class SingleMass( statespace.StateSpaceSystem ):
         return lines_pts
     
 
-
+###############################################################################
 
 class TwoMass( statespace.StateSpaceSystem ):
     """Two Mass with linear spring and damper
@@ -167,7 +167,7 @@ class TwoMass( statespace.StateSpaceSystem ):
     """
 
     ############################
-    def __init__(self, m=1, k=2, b=0.2):
+    def __init__(self, m=1, k=2, b=0.2, output_mass = 2):
         """ """
 
         # params
@@ -180,6 +180,9 @@ class TwoMass( statespace.StateSpaceSystem ):
         
         self.l1 = 2
         self.l2 = 1
+        
+        # sensor output
+        self.output_mass = output_mass
         
         # Matrix ABCD
         self.compute_ABCD()
@@ -211,7 +214,17 @@ class TwoMass( statespace.StateSpaceSystem ):
                             [ 0 ],
                             [ 0 ],
                             [ 1/self.m2 ]])
-        self.C = np.array([ [ 0 , 1 , 0 , 0 ]])
+        
+        if self.output_mass == 2:
+            self.C = np.array([ [ 0 , 1 , 0 , 0 ]])
+            self.output_label = ['x2']
+        elif self.output_mass ==1:
+            self.C = np.array([ [ 1 , 0 , 0 , 0 ]])
+            self.output_label = ['x1']
+        else:
+            self.C = np.array([ [ 0 , 1 , 0 , 0 ]])
+            self.output_label = ['x2']
+            
         self.D = np.array([ [ 0 ]])
                 
         
@@ -233,7 +246,7 @@ class TwoMass( statespace.StateSpaceSystem ):
         """
         l = self.l1 * 3
         
-        domain  = [ (-l,l) , (-l,l) , (-l,l) ]#  
+        domain  = [ (-l+self.l1,l+self.l1) , (-l,l) , (-l,l) ]#  
                 
         return domain
     
@@ -345,7 +358,9 @@ class TwoMass( statespace.StateSpaceSystem ):
         lines_pts.append( pts )
                 
         return lines_pts
+  
     
+  ###############################################################################
     
     
 class ThreeMass( statespace.StateSpaceSystem ):
@@ -357,7 +372,7 @@ class ThreeMass( statespace.StateSpaceSystem ):
     """
 
     ############################
-    def __init__(self, m=1, k=2, b=0.2):
+    def __init__(self, m=1, k=2, b=0.2, output_mass = 2):
         """ """
 
         # params
@@ -373,6 +388,9 @@ class ThreeMass( statespace.StateSpaceSystem ):
         
         self.l1 = 2
         self.l2 = 1
+        
+        # sensor output
+        self.output_mass = output_mass
         
         # Matrix ABCD
         self.compute_ABCD()
@@ -418,7 +436,20 @@ class ThreeMass( statespace.StateSpaceSystem ):
                             [ 0 ],
                             [ 0 ],
                             [ 1/m2 ]])
-        self.C = np.array([ [ 0 , 0 , 1 , 0 , 0 , 0 ]])
+        
+        if self.output_mass == 3:
+            self.C = np.array([ [ 0 , 0 , 1 , 0 , 0 , 0 ]])
+            self.output_label = ['x3']
+        elif self.output_mass == 2:
+            self.C = np.array([ [ 0 , 1 , 0 , 0 , 0 , 0 ]])
+            self.output_label = ['x2']
+        elif self.output_mass == 1:
+            self.C = np.array([ [ 1 , 0 , 0 , 0 , 0 , 0 ]])
+            self.output_label = ['x1']
+        else:
+            self.C = np.array([ [ 0 , 0 , 1 , 0 , 0 , 0 ]])
+            self.output_label = ['x3']
+            
         self.D = np.array([ [ 0 ]])
                 
         
@@ -440,7 +471,7 @@ class ThreeMass( statespace.StateSpaceSystem ):
         """
         l = self.l1 * 3
         
-        domain  = [ (-l,l) , (-l,l) , (-l,l) ]#  
+        domain  = [ (-l+self.l1,l+self.l1) , (-l,l) , (-l,l) ]#  
                 
         return domain
     
@@ -588,6 +619,292 @@ class ThreeMass( statespace.StateSpaceSystem ):
                 
         return lines_pts
     
+    
+
+###############################################################################
+
+class FloatingSingleMass( SingleMass ):
+    """Single Mass with damping
+
+    Attributes
+    ----------
+
+    """
+
+    ############################
+    def __init__(self, m=1, b=0):
+        """ """
+        super().__init__(m,0,b)
+        
+        # Name and labels
+        self.name = 'Mass'
+        
+    ###########################################################################
+    def forward_kinematic_lines(self, q ):
+        """ 
+        Compute points p = [x;y;z] positions given config q 
+        ----------------------------------------------------
+        - points of interest for ploting
+        
+        Outpus:
+        lines_pts = [] : a list of array (n_pts x 3) for each lines
+        
+        """
+        
+        lines_pts = [] # list of array (n_pts x 3) for each lines
+
+        # mass
+        pts      = np.zeros(( 5 , 3 ))
+        
+        pts[0,:] =  np.array([q[0] - self.l2/2,+self.l2/2,0])
+        pts[1,:] =  np.array([q[0] + self.l2/2,+self.l2/2,0])
+        pts[2,:] =  np.array([q[0] + self.l2/2,-self.l2/2,0])
+        pts[3,:] =  np.array([q[0] - self.l2/2,-self.l2/2,0])
+        pts[4,:] =  pts[0,:]
+        
+        lines_pts.append( pts )
+        
+        # force arrow
+        pts      = np.zeros(( 5 , 3 ))
+        
+        pts[0,:] =  np.array([q[0] + self.l2/2,0,0])
+        pts[1,:] =  np.array([q[0] + self.l2/2 + q[1],0,0])
+        pts[2,:] =  np.array([q[0] + self.l2/2 + q[1] - self.l2/4*q[1],+self.l2/4*q[1],0])
+        pts[3,:] =  np.array([q[0] + self.l2/2 + q[1],0,0])
+        pts[4,:] =  np.array([q[0] + self.l2/2 + q[1] - self.l2/4*q[1],-self.l2/4*q[1],0])
+        
+        lines_pts.append( pts )
+                
+        return lines_pts
+
+
+###############################################################################
+
+class FloatingTwoMass( TwoMass ):
+    """Single Mass with damping
+
+    Attributes
+    ----------
+
+    """
+
+    ############################
+    def __init__(self, m=1, k=1, b=0, output_mass=2):
+        """ """
+        super().__init__(m,k,b,output_mass)
+        
+        self.k1 = 0  # no base spring
+        self.compute_ABCD()
+        
+    ###########################################################################
+    def forward_kinematic_lines(self, q ):
+        """ 
+        Compute points p = [x;y;z] positions given config q 
+        ----------------------------------------------------
+        - points of interest for ploting
+        
+        Outpus:
+        lines_pts = [] : a list of array (n_pts x 3) for each lines
+        
+        """
+        
+        lines_pts = [] # list of array (n_pts x 3) for each lines
+        
+        # mass 1 
+        pts      = np.zeros(( 5 , 3 ))
+        
+        x1 = q[0] - self.l1
+        
+        pts[0,:] =  np.array([ x1 - self.l2/2,+self.l2/2,0])
+        pts[1,:] =  np.array([ x1 + self.l2/2,+self.l2/2,0])
+        pts[2,:] =  np.array([ x1 + self.l2/2,-self.l2/2,0])
+        pts[3,:] =  np.array([ x1 - self.l2/2,-self.l2/2,0])
+        pts[4,:] =  pts[0,:]
+        
+        lines_pts.append( pts )
+        
+        # mass 2 
+        pts      = np.zeros(( 5 , 3 ))
+        
+        x2 = q[1]
+        
+        pts[0,:] =  np.array([x2 - self.l2/2,+self.l2/2,0])
+        pts[1,:] =  np.array([x2 + self.l2/2,+self.l2/2,0])
+        pts[2,:] =  np.array([x2 + self.l2/2,-self.l2/2,0])
+        pts[3,:] =  np.array([x2 - self.l2/2,-self.l2/2,0])
+        pts[4,:] =  pts[0,:]
+        
+        lines_pts.append( pts )
+        
+        
+        # spring 2 
+        pts      = np.zeros(( 15 , 3 ))
+        
+        d = q[1] - q[0] + self.l1 - self.l2
+        h =  self.l2 / 3
+        
+        pts[0,:]  = np.array([d*0.00 + x1 + self.l2/2,0,0])
+        pts[1,:]  = np.array([d*0.20 + x1+self.l2/2,0,0])
+        pts[2,:]  = np.array([d*0.25 + x1+self.l2/2,+h,0])
+        pts[3,:]  = np.array([d*0.30 + x1+self.l2/2,-h,0])
+        pts[4,:]  = np.array([d*0.35 + x1+self.l2/2,+h,0])
+        pts[5,:]  = np.array([d*0.40 + x1+self.l2/2,-h,0])
+        pts[6,:]  = np.array([d*0.45 + x1+self.l2/2,+h,0])
+        pts[7,:]  = np.array([d*0.50 + x1+self.l2/2,-h,0])
+        pts[8,:]  = np.array([d*0.55 + x1+self.l2/2,+h,0])
+        pts[9,:]  = np.array([d*0.60 + x1+self.l2/2,-h,0])
+        pts[10,:] = np.array([d*0.65 + x1+self.l2/2,+h,0])
+        pts[11,:] = np.array([d*0.70 + x1+self.l2/2,-h,0])
+        pts[12,:] = np.array([d*0.75 + x1+self.l2/2,+h,0])
+        pts[13,:] = np.array([d*0.80 + x1+self.l2/2,0,0])
+        pts[14,:] = np.array([d*1.00 + x1+self.l2/2,0,0])
+        
+        lines_pts.append( pts )
+        
+        # force arrow
+        pts      = np.zeros(( 5 , 3 ))
+        
+        pts[0,:] =  np.array([q[1] + self.l2/2,0,0])
+        pts[1,:] =  np.array([q[1] + self.l2/2 + q[2],0,0])
+        pts[2,:] =  np.array([q[1] + self.l2/2 + q[2] - self.l2/4*q[2],+self.l2/4*q[2],0])
+        pts[3,:] =  np.array([q[1] + self.l2/2 + q[2],0,0])
+        pts[4,:] =  np.array([q[1] + self.l2/2 + q[2] - self.l2/4*q[2],-self.l2/4*q[2],0])
+        
+        lines_pts.append( pts )
+                
+        return lines_pts
+    
+###############################################################################
+
+class FloatingThreeMass( ThreeMass ):
+    """Single Mass with damping
+
+    Attributes
+    ----------
+
+    """
+
+    ############################
+    def __init__(self, m=1, k=1, b=0, output_mass=3):
+        """ """
+        super().__init__(m,k,b,output_mass)
+        self.k1 = 0
+        self.compute_ABCD()
+    
+    ###########################################################################
+    def forward_kinematic_lines(self, q ):
+        """ 
+        Compute points p = [x;y;z] positions given config q 
+        ----------------------------------------------------
+        - points of interest for ploting
+        
+        Outpus:
+        lines_pts = [] : a list of array (n_pts x 3) for each lines
+        
+        """
+        
+        lines_pts = [] # list of array (n_pts x 3) for each lines
+
+        
+        # mass 1 
+        pts      = np.zeros(( 5 , 3 ))
+        
+        x1 = q[0] - self.l1
+        
+        pts[0,:] =  np.array([ x1 - self.l2/2,+self.l2/2,0])
+        pts[1,:] =  np.array([ x1 + self.l2/2,+self.l2/2,0])
+        pts[2,:] =  np.array([ x1 + self.l2/2,-self.l2/2,0])
+        pts[3,:] =  np.array([ x1 - self.l2/2,-self.l2/2,0])
+        pts[4,:] =  pts[0,:]
+        
+        lines_pts.append( pts )
+        
+        # mass 2 
+        pts      = np.zeros(( 5 , 3 ))
+        
+        x2 = q[1]
+        
+        pts[0,:] =  np.array([x2 - self.l2/2,+self.l2/2,0])
+        pts[1,:] =  np.array([x2 + self.l2/2,+self.l2/2,0])
+        pts[2,:] =  np.array([x2 + self.l2/2,-self.l2/2,0])
+        pts[3,:] =  np.array([x2 - self.l2/2,-self.l2/2,0])
+        pts[4,:] =  pts[0,:]
+        
+        lines_pts.append( pts )
+        
+        #mass 3
+        pts      = np.zeros(( 5 , 3 ))
+        
+        x3 = q[2] + self.l1
+        
+        pts[0,:] =  np.array([x3 - self.l2/2,+self.l2/2,0])
+        pts[1,:] =  np.array([x3 + self.l2/2,+self.l2/2,0])
+        pts[2,:] =  np.array([x3 + self.l2/2,-self.l2/2,0])
+        pts[3,:] =  np.array([x3 - self.l2/2,-self.l2/2,0])
+        pts[4,:] =  pts[0,:]
+        
+        lines_pts.append( pts )
+        
+        # spring 2 
+        pts      = np.zeros(( 15 , 3 ))
+        h =  self.l2 / 3
+        d = q[1] - q[0] + self.l1 - self.l2
+        
+        pts[0,:]  = np.array([d*0.00 + x1 + self.l2/2,0,0])
+        pts[1,:]  = np.array([d*0.20 + x1+self.l2/2,0,0])
+        pts[2,:]  = np.array([d*0.25 + x1+self.l2/2,+h,0])
+        pts[3,:]  = np.array([d*0.30 + x1+self.l2/2,-h,0])
+        pts[4,:]  = np.array([d*0.35 + x1+self.l2/2,+h,0])
+        pts[5,:]  = np.array([d*0.40 + x1+self.l2/2,-h,0])
+        pts[6,:]  = np.array([d*0.45 + x1+self.l2/2,+h,0])
+        pts[7,:]  = np.array([d*0.50 + x1+self.l2/2,-h,0])
+        pts[8,:]  = np.array([d*0.55 + x1+self.l2/2,+h,0])
+        pts[9,:]  = np.array([d*0.60 + x1+self.l2/2,-h,0])
+        pts[10,:] = np.array([d*0.65 + x1+self.l2/2,+h,0])
+        pts[11,:] = np.array([d*0.70 + x1+self.l2/2,-h,0])
+        pts[12,:] = np.array([d*0.75 + x1+self.l2/2,+h,0])
+        pts[13,:] = np.array([d*0.80 + x1+self.l2/2,0,0])
+        pts[14,:] = np.array([d*1.00 + x1+self.l2/2,0,0])
+        
+        lines_pts.append( pts )
+        
+        # spring 3
+        pts      = np.zeros(( 15 , 3 ))
+        
+        d = q[2] - q[1] + self.l1 - self.l2
+        
+        pts[0,:]  = np.array([d*0.00 + x2 + self.l2/2,0,0])
+        pts[1,:]  = np.array([d*0.20 + x2+self.l2/2,0,0])
+        pts[2,:]  = np.array([d*0.25 + x2+self.l2/2,+h,0])
+        pts[3,:]  = np.array([d*0.30 + x2+self.l2/2,-h,0])
+        pts[4,:]  = np.array([d*0.35 + x2+self.l2/2,+h,0])
+        pts[5,:]  = np.array([d*0.40 + x2+self.l2/2,-h,0])
+        pts[6,:]  = np.array([d*0.45 + x2+self.l2/2,+h,0])
+        pts[7,:]  = np.array([d*0.50 + x2+self.l2/2,-h,0])
+        pts[8,:]  = np.array([d*0.55 + x2+self.l2/2,+h,0])
+        pts[9,:]  = np.array([d*0.60 + x2+self.l2/2,-h,0])
+        pts[10,:] = np.array([d*0.65 + x2+self.l2/2,+h,0])
+        pts[11,:] = np.array([d*0.70 + x2+self.l2/2,-h,0])
+        pts[12,:] = np.array([d*0.75 + x2+self.l2/2,+h,0])
+        pts[13,:] = np.array([d*0.80 + x2+self.l2/2,0,0])
+        pts[14,:] = np.array([d*1.00 + x2+self.l2/2,0,0])
+        
+        lines_pts.append( pts )
+        
+        # force arrow
+        pts      = np.zeros(( 5 , 3 ))
+        
+        pts[0,:] =  np.array([x3 + self.l2/2,0,0])
+        pts[1,:] =  np.array([x3 + self.l2/2 + q[3],0,0])
+        pts[2,:] =  np.array([x3 + self.l2/2 + q[3] - self.l2/4*q[3],+self.l2/4*q[3],0])
+        pts[3,:] =  np.array([x3 + self.l2/2 + q[3],0,0])
+        pts[4,:] =  np.array([x3 + self.l2/2 + q[3] - self.l2/4*q[3],-self.l2/4*q[3],0])
+        
+        lines_pts.append( pts )
+                
+        return lines_pts
+        
+        
 '''
 #################################################################
 ##################          Main                         ########

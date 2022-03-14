@@ -433,6 +433,27 @@ class ContinuousDynamicSystem:
 
         self.get_animator().animate_simulation( self.traj, **kwargs)
         
+    
+    ##############################
+    def generate_simulation_html_video(self, **kwargs):
+        """
+        Show Animation of the simulation
+        ----------------------------------
+        time_factor_video < 1 --> Slow motion video
+        is_3d = True for 3D animation
+        note: will call compute_trajectory if no simulation data is present
+
+        """
+        
+        # Check is trajectory is already computed
+        if self.traj == None:
+            self.compute_trajectory()
+            
+        animator = self.get_animator()
+        animator.animate_simulation( self.traj, show = False )
+        html_video = animator.ani.to_html5_video()
+        
+        return html_video
         
     #############################
     def plot_linearized_bode(self, u_index=0, y_index=0):

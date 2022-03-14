@@ -103,12 +103,20 @@ class ProportionalController(controller.StaticController):
         self.rbar = np.zeros((self.k,))
         self.name = "%d X %d Proportional Contrller" % self.K.shape
         
+        self.ybar = np.zeros((self.p,))  # feedback offset
+        self.ubar = np.zeros((self.m,))  # control input offset
+        
         
     ##############################
     def c(self, y, r, t=0):
         """ Feedback law """
         
-        return self.K.dot(r - y)
+        delta_y = y - self.ybar
+        delta_u = self.K.dot(r - delta_y)
+        
+        u = delta_u + self.ubar
+        
+        return u
 
 
 

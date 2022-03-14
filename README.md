@@ -12,7 +12,7 @@ A object-based toolbox for robot dynamic simulation, analysis, control and plann
 ### Recommended environment ###
 Anaconda distribution + spyder IDE available here: https://www.anaconda.com/products/individual
 
-Note: If graphical animations are not working, try changing the graphics backend. In spyder this option is found in the menu at python/Preferences/IPython console/Backend. Inline does not allow animations, it is best to use Automatic of OS X (for Mac).
+Note: If graphical animations are not working, try changing the graphics backend. In spyder this option is found in the menu at python/Preferences/IPython console/Backend. Inline does not allow animations, it is best to use Automatic (for Windows and Ubuntu) or OS X (for Mac).
 
 ### Clone repo and add to python path ###
 

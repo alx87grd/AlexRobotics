@@ -12,9 +12,6 @@ import numpy as np
 from pyro.dynamic import system
 ###############################################################################
 
-
-
-
 ###############################################################################
         
 class MechanicalSystem( system.ContinuousDynamicSystem ):
@@ -37,15 +34,19 @@ class MechanicalSystem( system.ContinuousDynamicSystem ):
     """
     
     ############################
-    def __init__(self, dof = 1 ):
+    def __init__(self, dof = 1 , actuators = None):
         """ """
         
         # Degree of Freedom
         self.dof = dof
         
+        # Nb of actuators
+        if actuators == None:   # If not specifyied the sys is fully actuated
+            actuators = dof
+        
         # Dimensions
         n = dof * 2 
-        m = dof  
+        m = actuators
         p = dof * 2
         
         # initialize standard params
@@ -66,7 +67,7 @@ class MechanicalSystem( system.ContinuousDynamicSystem ):
             self.x_lb[i+dof] = - np.pi * 2
             self.state_label[i+dof] = 'Velocity ' + str(i)
             self.state_units[i+dof] = '[rad/sec]'
-        for i in range(dof):
+        for i in range(actuators):
             self.u_ub[i] = + 5
             self.u_lb[i] = - 5
             self.input_label[i] = 'Torque ' + str(i)
@@ -118,7 +119,10 @@ class MechanicalSystem( system.ContinuousDynamicSystem ):
         Actuator Matrix  : dof x m
         """
         
-        B = np.diag( np.ones( self.dof ) ) # Default is identity matrix
+        B = np.zeros( ( self.dof , self.m ) )
+        
+        for i in range(min(self.m,self.dof)):
+            B[i,i] = 1                # Diag matrix for the first m rows
         
         return B
     
@@ -197,16 +201,22 @@ class MechanicalSystem( system.ContinuousDynamicSystem ):
     def actuator_forces(self, q  , dq  , ddq , t = 0 ):
         """ Computed actuator forces given a trajectory (inverse dynamic) """  
         
-        B = self.B( q )
-                
-        # Generalized forces
-        forces = self.generalized_forces( q , dq , ddq , t )
+        if self.dof == self.m:
         
-        # Actuator forces
-        u = np.dot( np.linalg.inv( B ) , forces )
+            B = self.B( q )
+                    
+            # Generalized forces
+            forces = self.generalized_forces( q , dq , ddq , t )
+            
+            # Actuator forces
+            u = np.dot( np.linalg.inv( B ) , forces )
+            
+            return u
         
-        return u
-    
+        else:
+            
+            raise NotImplementedError
+        
     
     ##############################
     def ddq(self, q , dq , u , t = 0 ):
@@ -260,8 +270,9 @@ class MechanicalSystem( system.ContinuousDynamicSystem ):
         e_k = 0.5 * np.dot( dq , np.dot( self.H( q ) , dq ) )
         
         return e_k
-        
-        
+
+
+
     
 '''
 #################################################################

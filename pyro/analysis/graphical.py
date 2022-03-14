@@ -117,7 +117,7 @@ class TrajectoryPlotter:
         if plot == 'All' or plot == 'y' or plot == 'xy':
             # For all outputs
             for i in range( sys.p ):
-                plots[j].plot( traj.t , traj.x[:,i] , 'k')
+                plots[j].plot( traj.t , traj.y[:,i] , 'k')
                 plots[j].set_ylabel(sys.output_label[i] + '\n' +
                 sys.output_units[i] , fontsize=self.fontsize )
                 plots[j].grid(True)
@@ -363,7 +363,8 @@ class Animator:
 
     ###########################################################################
     def animate_simulation(self, traj, time_factor_video =  1.0 , is_3d = False, 
-                                 save = False , file_name = 'Animation' ):
+                                 save = False , file_name = 'Animation' , 
+                                 show = True ):
         """ 
         Show Animation of the simulation 
         ----------------------------------
@@ -493,8 +494,11 @@ class Animator:
             self.ani.save( file_name + '.gif', writer='imagemagick', fps=30)
 
         # self.ani_fig.show()
-        plt.ioff()
-        plt.show()
+        if show:
+            plt.ioff()
+            plt.show()
+        else:
+            plt.close(self.ani_fig)
         
 
     #####################################    

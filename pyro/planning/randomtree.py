@@ -57,7 +57,7 @@ class RRT:
         self.goal_radius          = 0.5        
         self.alpha                = 0.9    # prob of random exploration
         self.beta                 = 0.0    # prob of random u
-        self.max_nodes            = 2000  # maximum number of nodes
+        self.max_nodes            = 2000   # maximum number of nodes
         self.max_distance_compute = 2000   # max  nodes to check distance
         self.max_solution_time    = 100    # won"t look for longuer solution 
         

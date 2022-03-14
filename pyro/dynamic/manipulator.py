@@ -1789,9 +1789,9 @@ if __name__ == "__main__":
     #sys.animate_simulation( is_3d = True )
     #sys.plot_trajectory()
     
-    #sys = FiveLinkPlanarManipulator()
-    #sys.ubar = np.array([1,1,1,1,1])
-    #sys.animate_simulation()
+    sys = FiveLinkPlanarManipulator()
+    sys.ubar = np.array([1,1,1,1,1])
+    sys.animate_simulation()
     
     #aaa = TwoLinkManipulatorwithObstacles()
     #bbb = SpeedControlledManipulator.from_manipulator( aaa )
