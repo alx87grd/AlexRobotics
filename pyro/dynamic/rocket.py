@@ -19,7 +19,7 @@ from pyro.dynamic import mechanical
 # 2D planar drone
 ##############################################################################
         
-class Drone2D( mechanical.MechanicalSystem ):
+class Rocket( mechanical.MechanicalSystemWithPositionInputs ):
     """ 
     Equations of Motion
     -------------------------
@@ -29,39 +29,35 @@ class Drone2D( mechanical.MechanicalSystem ):
     ############################
     def __init__(self):
         """ """
-    
-        # Dimensions
-        dof       = 3   
-        actuators = 2
         
         # initialize standard params
-        super().__init__( dof, actuators )
+        super().__init__( 3 , 1 , 1 )
         
         # Labels
-        self.name = '2D drone model'
+        self.name = '2D rocket model'
         self.state_label = ['x','y','theta','vx','vy','w']
-        self.input_label = ['T1', 'T2']
+        self.input_label = ['Trust', 'delta']
         self.output_label = self.state_label
         
         # Units
         self.state_units = ['[m]','[m]','[rad]','[m/sec]','[m/sec]','[rad/sec]']
-        self.input_units = ['[N]', '[N]']
+        self.input_units = ['[N]', '[Rad]']
         self.output_units = self.state_units
         
         # State working range
-        self.x_ub = np.array([+5,+2,+1,10,10,10])
-        self.x_lb = np.array([-5,-2,-1,-10,-10,-10])
+        self.x_ub = np.array([+50,+100,+2,10,10,10])
+        self.x_lb = np.array([-50,-0,-2,-10,-10,-10])
         
         # Model param
-        self.mass           = 1
-        self.inertia        = 0.1
-        self.truster_offset = 0.5
-        self.gravity        = 9.81
-        self.cda            = 0.1
+        self.mass           = 1000
+        self.inertia        = 100
+        self.ycg            = 1
+        self.gravity        = 9.8
+        self.cda            = 1
         
         # Kinematic param
-        self.width  = 1
-        self.height = 0.2
+        self.width  = 0.2
+        self.height = 2.0
         
         # Graphic output parameters 
         self.dynamic_domain  = True
@@ -106,20 +102,19 @@ class Drone2D( mechanical.MechanicalSystem ):
     
     
     ###########################################################################
-    def B(self, q ):
+    def B(self, q , u ):
         """ 
         Actuator Matrix  : dof x m
         """
         
-        B = np.zeros((3,2))
+        B = np.zeros((3,1))
+        
+        delta = u[1]
         
         # TODO PLACE HOLDER
-        B[0,0] = -np.sin( q[2] )
-        B[0,1] = -np.sin( q[2] )
-        B[1,0] = np.cos( q[2] )
-        B[1,1] = np.cos( q[2] )
-        B[2,0] = -self.truster_offset
-        B[2,1] = self.truster_offset
+        B[0,0] = -np.sin( q[2] + delta )
+        B[1,0] = np.cos( q[2] + delta)
+        B[2,0] = - self.ycg * np.sin( delta )
         
         return B
     
@@ -160,7 +155,7 @@ class Drone2D( mechanical.MechanicalSystem ):
     def forward_kinematic_domain(self, q ):
         """ 
         """
-        l = self.width * 3
+        l = self.height * 3
         
         x = q[0]
         y = q[1]
@@ -209,29 +204,35 @@ class Drone2D( mechanical.MechanicalSystem ):
         lines_color.append( 'k' )
         
         ###########################
-        # drone body
+        #  body
         ###########################
         
         x = q[0]
         y = q[1]
         s = np.sin(q[2])
         c = np.cos(q[2])
-        l = self.width
-        h = self.height
+        l = self.height
+        w = self.width
         
-        pts      = np.zeros(( 4 , 3 ))
-        pts[0,:] = np.array([x+l*c-h*s,y+l*s+h*c,0])
-        pts[1,:] = np.array([x+l*c,y+l*s,0])
-        pts[2,:] = np.array([x-l*c,y-l*s,0])
-        pts[3,:] = np.array([x-l*c-h*s,y-l*s+h*c,0])
+        pts      = np.zeros(( 10 , 3 ))
+        pts[0,:] = np.array([x+l*s,y-l*c,0])
+        pts[1,:] = pts[0,:] + np.array([-w*c,-w*s,0])
+        pts[2,:] = pts[1,:] + np.array([-2*l*s,2*l*c,0])
+        pts[3,:] = np.array([x-(l+w)*s,y+(l+w)*c,0])
+        pts[4,:] = np.array([x-l*s+w*c,y+l*c+w*s,0])
+        pts[5,:] = pts[4,:] + np.array([2*l*s,-2*l*c,0])
+        pts[6,:] = pts[0,:]
+        pts[7,:] = pts[0,:] + np.array([w*s-w*c,-w*c-w*s,0])
+        pts[8,:] = pts[0,:] + np.array([w*s+w*c,-w*c+w*s,0])
+        pts[9,:] = pts[0,:]
         
         
         lines_pts.append( pts )
-        lines_style.append( 'o-')
+        lines_style.append( '-')
         lines_color.append( 'b' )
         
         ###########################
-        # drone cg
+        #  cg
         ###########################
         
         pts      = np.zeros(( 1 , 3 ))
@@ -257,34 +258,30 @@ class Drone2D( mechanical.MechanicalSystem ):
         lines_color = []
         
         ###########################
-        # drone trust force vectors
+        # trust force vectors
         ###########################
         
-        xcg = x[0]
-        ycg = x[1]
+        l = self.height
+        
         s = np.sin(x[2])
         c = np.cos(x[2])
-        l = self.width
-        h = self.height 
-        h2 = self.height * u[0]
+        
+        
+        xb = x[0]+l*s
+        yb = x[1]-l*c
+        
+        s = np.sin(x[2]+u[1])
+        c = np.cos(x[2]+u[1])
+        
+        T = u[0] * 0.0002
+        h = self.width
         
         pts      = np.zeros(( 5 , 3 ))
-        pts[0,:] = np.array([xcg+l*c-h*s,ycg+l*s+h*c,0])
-        pts[1,:] = np.array([xcg+l*c-h2*s,ycg+l*s+h2*c,0])
-        pts[2,:] = pts[1,:] + np.array([-h*c+h*s,-h*s-h*c,0])
+        pts[0,:] = np.array([xb,yb,0])
+        pts[1,:] = pts[0,:] + np.array([T*s,-T*c,0])
+        pts[2,:] = pts[1,:] + np.array([h*c-h*s,h*s+h*c,0])
         pts[3,:] = pts[1,:] 
-        pts[4,:] = pts[1,:] + np.array([h*c+h*s,h*s-h*c,0])
-        
-        lines_pts.append( pts )
-        lines_style.append( '-')
-        lines_color.append( 'r' )
-        
-        pts      = np.zeros(( 5 , 3 ))
-        pts[0,:] = np.array([xcg-l*c-h*s,ycg-l*s+h*c,0])
-        pts[1,:] = np.array([xcg-l*c-h2*s,ycg-l*s+h2*c,0])
-        pts[2,:] = pts[1,:] + np.array([-h*c+h*s,-h*s-h*c,0])
-        pts[3,:] = pts[1,:] 
-        pts[4,:] = pts[1,:] + np.array([h*c+h*s,h*s-h*c,0])
+        pts[4,:] = pts[1,:] + np.array([-h*c-h*s,-h*s+h*c,0])
         
         lines_pts.append( pts )
         lines_style.append( '-')
@@ -304,12 +301,12 @@ class Drone2D( mechanical.MechanicalSystem ):
 if __name__ == "__main__":     
     """ MAIN TEST """
     
-    sys = Drone2D()
+    sys = Rocket()
     
-    sys.x0[5] = 0
+    sys.x0[0] = 0
     
-    sys.ubar[0] = 9.81 * 0.6
-    sys.ubar[1] = 9.81 * 0.7
+    sys.ubar[0] = sys.mass * sys.gravity * 1.1
+    sys.ubar[1] = -0.005
     
     sys.plot_trajectory()
     sys.animate_simulation()

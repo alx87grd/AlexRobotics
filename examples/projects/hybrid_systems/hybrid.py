@@ -14,7 +14,7 @@ from pyro.analysis import simulation
 
 
 ###############################################################################
-class SwitchedSystem(ContinuousDynamicSystem):
+class SwitchedSystem( ContinuousDynamicSystem):
     """
     Class in construction !!!!!!
     

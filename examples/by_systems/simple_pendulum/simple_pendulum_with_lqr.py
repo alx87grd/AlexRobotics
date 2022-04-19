@@ -16,7 +16,7 @@ from pyro.control.lqr           import linearize_and_synthesize_lqr_controller
 sys = SinglePendulum()
 
 # Nominal state to stabilize
-sys.xbar[0] = 3.14
+sys.xbar[0] = -3.14
 
 # Cost function
 cf  = QuadraticCostFunction.from_sys( sys )
@@ -29,7 +29,7 @@ ctl = linearize_and_synthesize_lqr_controller( sys , cf )
 
 # Simulation Closed-Loop Non-linear with LQR controller
 cl_sys = ctl + sys
-cl_sys.x0 = np.array([2,0])
+cl_sys.x0 = np.array([0,0])
 cl_sys.compute_trajectory()
 cl_sys.plot_trajectory('xu')
 cl_sys.animate_simulation()

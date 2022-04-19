@@ -56,7 +56,7 @@ def synthesize_lqr_controller( ss , cf , xbar = None, ubar = None):
     K     = np.dot( R_inv  , BTS )
     
     # Define linear controller
-    ctl = linear.ProportionalController( K )
+    ctl = linear.ProportionalController.from_matrix( K )
     ctl.name = 'LQR controller'
     
     # Offsets on input and ouputs

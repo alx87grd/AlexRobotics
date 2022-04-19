@@ -21,17 +21,26 @@ from pyro.analysis import costfunction
 class ContinuousDynamicSystem:
     """ 
     Mother class for continuous dynamical systems
-    ----------------------------------------------
-    n : number of states
-    m : number of control inputs
-    p : number of outputs
-    ---------------------------------------
-    dx = f( x , u , t )
-    y  = h( x , u , t )
+    
+    Main functions
+    ---------------------------------------------
+    dx = f( x , u , t )    : dynamic equation
     
     optionnal: 
-    u = t2u( t ) : time-dependent input signal
+    y = h( x , u , t )     : output equation (by default y = x )
+    u = t2u( t )           : time-dependent input signal (by default u = ubar)
+    q = xut2q( x , u , t ) : get configuration vector (by default q = x )
     
+    graphic output:
+    lines = forward_kinematic_lines( q ) : draw the system based on q
+    
+    Signal and Dimentions
+    ----------------------------------------------
+    x  : state vector             n x 1
+    u  : control inputs vector    m x 1
+    t  : time                     1 x 1
+    y  : output vector            p x 1
+    q  : configuration vector     ? x 1   (dimension is not imposed)
     
     """
     ###########################################################################
@@ -87,9 +96,13 @@ class ContinuousDynamicSystem:
         self.ubar = np.zeros(self.m)
         
         # Plot params
-        self.domain     = [ (-10,10) , (-10,10) , (-10,10) ]
-        self.linestyle  = 'o-'
-        self.is_3d      =  False  # Use 2d plot by default
+        self.domain           = [ (-10,10) , (-10,10) , (-10,10) ]
+        self.linestyle        = 'o-'
+        self.linestyle_plus   = '--'
+        self.linescolor       = 'b'
+        self.linescolor_plus  = 'r'
+        self.lines_plus       = True   # Bool to active second graphic outpout
+        self.is_3d            = False  # Use 2d plot by default
         
         ################################
         # Variables
@@ -251,6 +264,36 @@ class ContinuousDynamicSystem:
     
     
     ###########################################################################
+    def forward_kinematic_lines_plus(self, x , u , t ):
+        """ 
+        Additionnal optionnal graphic output used in animations
+        
+        Compute points p = [x;y;z] positions given state x , u , t
+        -------------------------------------------------------------
+        - additionnal points of interest for ploting
+        - for instances forces arrows illustrating control inputs
+        
+        Outpus:
+        lines_pts = [] : a list of array (n_pts x 3) for each lines
+        
+        """
+        
+        lines_pts = [] # list of array (n_pts x 3) for each lines
+        
+        ###########################
+        # Your graphical code here
+        ###########################
+            
+        # simple place holder
+        for u_i in u:
+            pts      = np.zeros(( 1 , 3 ))     # array of 1 pts for the line
+            pts[0,0] = u_i                     # x cord of point 0 = u
+            lines_pts.append( pts )            # list of all arrays of pts
+                
+        return lines_pts
+    
+    
+    ###########################################################################
     # No need to overwrite the following functions for custom dynamic systems
     ###########################################################################
     
@@ -300,6 +343,34 @@ class ContinuousDynamicSystem:
     ###########################################################################
     # Quick Analysis Shorcuts
     ###########################################################################
+    """
+    #############################
+    def set_single_output_to(self, o=0 ):
+        
+        #TODO
+       
+        self.p    = 1             # output size
+        
+        self.full_h = self.h
+    
+        # new output fonction
+        def new_h(x, u, t):
+            
+            # New output function
+            y_old = self.full_h( x, u, t)
+            
+            y_new    = np.zeros(1)
+            y_new[0] = y_old[o]
+            
+            return y_new
+            
+        self.h = new_h
+        
+        
+        pass
+    """
+        
+        
     
     #############################
     def get_plotter(self):
@@ -360,7 +431,8 @@ class ContinuousDynamicSystem:
         if self.traj == None:
             self.compute_trajectory()
         
-        self.get_plotter().plot( self.traj, plot, **kwargs)
+        plotter = self.get_plotter()
+        plotter.plot( self.traj, plot, **kwargs)
 
 
     #############################
@@ -375,8 +447,9 @@ class ContinuousDynamicSystem:
         # Check is trajectory is already computed
         if self.traj == None:
             self.compute_trajectory()
-            
-        self.get_plotter().phase_plane_trajectory( self.traj, x_axis , y_axis)
+        
+        plotter = self.get_plotter()
+        plotter.phase_plane_trajectory( self.traj, x_axis , y_axis)
 
 
     #############################
@@ -391,8 +464,9 @@ class ContinuousDynamicSystem:
         # Check is trajectory is already computed
         if self.traj == None:
             self.compute_trajectory()
-            
-        self.get_plotter().phase_plane_trajectory_3d( 
+        
+        plotter = self.get_plotter()
+        plotter.phase_plane_trajectory_3d( 
                 self.traj, x_axis , y_axis, z_axis)
 
 
@@ -400,7 +474,7 @@ class ContinuousDynamicSystem:
     def show(self, q , x_axis = 0 , y_axis = 1 ):
         """ Plot figure of configuration q """
         
-        ani = graphical.Animator( self )
+        ani = self.get_animator()
         ani.x_axis  = x_axis
         ani.y_axis  = y_axis
         
@@ -411,7 +485,7 @@ class ContinuousDynamicSystem:
     def show3(self, q ):
         """ Plot figure of configuration q """
         
-        ani = graphical.Animator( self )
+        ani = self.get_animator()
         
         ani.show3( q )
         
@@ -430,8 +504,9 @@ class ContinuousDynamicSystem:
         # Check is trajectory is already computed
         if self.traj == None:
             self.compute_trajectory()
-
-        self.get_animator().animate_simulation( self.traj, **kwargs)
+            
+        ani = self.get_animator()
+        ani.animate_simulation( self.traj, **kwargs)
         
     
     ##############################
@@ -471,7 +546,7 @@ class ContinuousDynamicSystem:
         
     
     #############################
-    def plot_linearized_pz_map(self, u_index=0, y_index=0):
+    def plot_linearized_pz_map(self, u_index = 0 , y_index = 0 ):
         """
 
         """
@@ -485,9 +560,9 @@ class ContinuousDynamicSystem:
         
         
     #############################
-    def animate_linearized_mode(self, i=0 ):
+    def animate_linearized_mode(self, i = 0 ):
         """
-
+        Linearize and show eigen mode i
         """
         
         from pyro.dynamic.statespace import linearize
@@ -497,6 +572,7 @@ class ContinuousDynamicSystem:
         linearized_sys.animate_eigen_mode( i , self.is_3d )
         
         return linearized_sys
+    
     
     #############################
     def animate_linearized_modes(self ):

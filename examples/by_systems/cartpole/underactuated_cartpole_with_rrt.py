@@ -8,7 +8,7 @@ Created on Mon Nov 12 20:28:17 2018
 ###############################################################################
 import numpy as np
 ###############################################################################
-from pyro.dynamic import cartpole
+from pyro.dynamic  import cartpole
 from pyro.planning import randomtree
 ###############################################################################
 
@@ -28,13 +28,12 @@ planner.u_options = [
         np.array([ 0])
         ]
 
-planner.goal_radius = 1.5
-
-planner.max_nodes         = 10000
-planner.max_solution_time = 1.5
-planner.dt                = 0.05
+planner.goal_radius          = 1.5
+planner.max_nodes            = 10000
+planner.max_solution_time    = 1.5
+planner.dt                   = 0.05
 planner.max_distance_compute = 1000
-planner.dyna_plot         = False
+planner.dyna_plot            = False
 
 planner.find_path_to_goal( x_goal )
 

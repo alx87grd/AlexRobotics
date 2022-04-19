@@ -137,7 +137,9 @@ class KinematicBicyleModel( system.ContinuousDynamicSystem ):
         
         """
         
-        lines_pts = [] # list of array (n_pts x 3) for each lines
+        lines_pts   = [] # list of array (n_pts x 3) for each lines
+        lines_style = []
+        lines_color = []
         
         ###########################
         # Top line
@@ -151,6 +153,8 @@ class KinematicBicyleModel( system.ContinuousDynamicSystem ):
         pts[1,1] = 1
         
         lines_pts.append( pts )
+        lines_style.append('--')
+        lines_color.append('k')
         
         ###########################
         # bottom line
@@ -164,6 +168,8 @@ class KinematicBicyleModel( system.ContinuousDynamicSystem ):
         pts[1,1] = -1
         
         lines_pts.append( pts )
+        lines_style.append('--')
+        lines_color.append('k')
         
         ###########################
         # Vehicule
@@ -181,8 +187,10 @@ class KinematicBicyleModel( system.ContinuousDynamicSystem ):
                        0.2 * self.lenght * np.sin( q[2] + q[3] ) )
         
         lines_pts.append( pts )
+        lines_style.append('o-')
+        lines_color.append('b')
                 
-        return lines_pts
+        return lines_pts, lines_style , lines_color
     
     
 
@@ -290,13 +298,15 @@ class HolonomicMobileRobot( system.ContinuousDynamicSystem ):
         
         """
         
-        lines_pts = [] # list of array (n_pts x 3) for each lines
+        lines_pts   = [] # list of array (n_pts x 3) for each lines
+        lines_style = []
+        lines_color = []
         
         ###########################
         # Top line
         ###########################
             
-        pts = np.zeros((4,3))
+        pts = np.zeros((5,3))
         
         d = 0.2
         
@@ -308,10 +318,14 @@ class HolonomicMobileRobot( system.ContinuousDynamicSystem ):
         pts[2,1] = q[1]-d
         pts[3,0] = q[0]-d
         pts[3,1] = q[1]+d
+        pts[4,0] = q[0]+d
+        pts[4,1] = q[1]+d
         
         lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('b')
                 
-        return lines_pts
+        return lines_pts , lines_style , lines_color
         
         
 
@@ -381,12 +395,14 @@ class HolonomicMobileRobotwithObstacles( HolonomicMobileRobot ):
         """
 
         lines_pts = [] # list of array (n_pts x 3) for each lines
+        lines_style = []
+        lines_color = []
 
         ###########################
         # Vehicule
         ###########################
 
-        pts = np.zeros((4,3))
+        pts = np.zeros((5,3))
 
         d = 0.2
 
@@ -398,8 +414,12 @@ class HolonomicMobileRobotwithObstacles( HolonomicMobileRobot ):
         pts[2,1] = q[1]-d
         pts[3,0] = q[0]-d
         pts[3,1] = q[1]+d
+        pts[4,0] = q[0]+d
+        pts[4,1] = q[1]+d
 
         lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('b')
 
         ###########################
         # obstacles
@@ -425,9 +445,12 @@ class HolonomicMobileRobotwithObstacles( HolonomicMobileRobot ):
             pts[4,1] = obs[0][1]
 
             lines_pts.append( pts )
+            lines_style.append('-')
+            lines_color.append('k')
 
-
-        return lines_pts
+        
+                
+        return lines_pts , lines_style , lines_color
 
 
 ##############################################################################
@@ -531,7 +554,7 @@ class Holonomic3DMobileRobot(system.ContinuousDynamicSystem):
 
         """
 
-        lines_pts = []  # list of array (n_pts x 3) for each lines
+        lines_pts   = []  # list of array (n_pts x 3) for each lines
 
         ###########################
         # Top line
@@ -625,7 +648,7 @@ class Holonomic3DMobileRobotwithObstacles(Holonomic3DMobileRobot):
 
         """
 
-        lines_pts = [] # list of array (n_pts x 3) for each lines
+        lines_pts   = [] # list of array (n_pts x 3) for each lines
 
         ###########################
         # Vehicule
@@ -743,7 +766,9 @@ class KinematicCarModel( KinematicBicyleModel ):
         
         """
         
-        lines_pts = [] # list of array (n_pts x 3) for each lines
+        lines_pts   = [] # list of array (n_pts x 3) for each lines
+        lines_style = []
+        lines_color = []
         
         ###########################
         # Top line
@@ -757,6 +782,8 @@ class KinematicCarModel( KinematicBicyleModel ):
         pts[1,1] = self.width * 2.25
         
         lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('k')
         
         ###########################
         # middle line
@@ -770,6 +797,8 @@ class KinematicCarModel( KinematicBicyleModel ):
         pts[1,1] = self.width * 0.75
         
         lines_pts.append( pts )
+        lines_style.append('--')
+        lines_color.append('k')
         
         ###########################
         # bottom line
@@ -783,6 +812,8 @@ class KinematicCarModel( KinematicBicyleModel ):
         pts[1,1] = - self.width * 0.75
         
         lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('k')
         
         ###########################
         # Car
@@ -814,7 +845,10 @@ class KinematicCarModel( KinematicBicyleModel ):
         # Build first line of the car 
         pts = np.zeros((2,10))
         pts[0,0],pts[0,1],pts[1,0],pts[1,1] = self.draw_line(d1,d1,theta1,theta2,q[0],q[1])
+        
         lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('b')
         
         # Build second line of the car 
         pts = np.zeros((2,10))
@@ -823,17 +857,26 @@ class KinematicCarModel( KinematicBicyleModel ):
         py3 = pts[0,1]
         px4 = pts[1,0]
         py4 = pts[1,1]
+        
         lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('b')
         
         # Build third line of the car 
         pts = np.zeros((2,10))
         pts[0,0],pts[0,1],pts[1,0],pts[1,1] = self.draw_line(d1,d3,theta2,theta3,q[0],q[1])
+        
         lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('b')
 
         # Build third fourth of the car 
         pts = np.zeros((2,10))
         pts[0,0],pts[0,1],pts[1,0],pts[1,1] = self.draw_line(d1,d3,theta1,theta4,q[0],q[1])
+        
         lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('b')
         
         ###########################
         # Wheels
@@ -851,44 +894,68 @@ class KinematicCarModel( KinematicBicyleModel ):
         # Build first line of the left tire 
         pts = np.zeros((2,10))
         pts[0,0],pts[0,1],pts[1,0],pts[1,1] = self.draw_line(d,d,steer1,steer2,px3,py3)
+        
         lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('b')
         
         # Build second line of the left tire 
         pts = np.zeros((2,10))
         pts[0,0],pts[0,1],pts[1,0],pts[1,1] = self.draw_line(d,d,steer3,steer4,px3,py3)
+        
         lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('b')
 
         # Build third line of the left tire 
         pts = np.zeros((2,10))
         pts[0,0],pts[0,1],pts[1,0],pts[1,1] = self.draw_line(d,d,steer2,steer3,px3,py3)
+        
         lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('b')
         
         # Build fourth line of the left tire 
         pts = np.zeros((2,10))
         pts[0,0],pts[0,1],pts[1,0],pts[1,1] = self.draw_line(d,d,steer1,steer4,px3,py3)
+        
         lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('b')
         
         # Build first line of the right tire 
         pts = np.zeros((2,10))
         pts[0,0],pts[0,1],pts[1,0],pts[1,1] = self.draw_line(d,d,steer1,steer2,px4,py4)
+        
         lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('b')
         
         # Build second line of the right tire 
         pts = np.zeros((2,10))
         pts[0,0],pts[0,1],pts[1,0],pts[1,1] = self.draw_line(d,d,steer3,steer4,px4,py4)
+        
         lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('b')
         
         # Build third line of the right tire 
         pts = np.zeros((2,10))
         pts[0,0],pts[0,1],pts[1,0],pts[1,1] = self.draw_line(d,d,steer2,steer3,px4,py4)
+        
         lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('b')
 
         # Build first line of the right tire 
         pts = np.zeros((2,10))
         pts[0,0],pts[0,1],pts[1,0],pts[1,1] = self.draw_line(d,d,steer1,steer4,px4,py4)
+        
         lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('b')
                 
-        return lines_pts
+        return lines_pts , lines_style , lines_color
         
     ##########################################################################        
     def draw_line(self, d1, d2, angle1, angle2, x, y):
@@ -964,7 +1031,7 @@ class KinematicCarModelwithObstacles( KinematicCarModel ):
         
         """
         
-        lines_pts = KinematicCarModel.forward_kinematic_lines(self, q )
+        lines_pts , lines_style , lines_color = KinematicCarModel.forward_kinematic_lines(self, q )
         
 
         ###########################
@@ -991,9 +1058,10 @@ class KinematicCarModelwithObstacles( KinematicCarModel ):
             pts[4,1] = obs[0][1]
             
             lines_pts.append( pts )
-            
+            lines_style.append('-')
+            lines_color.append('k')
                 
-        return lines_pts
+        return lines_pts , lines_style , lines_color
 
     ###########################################################################
 
@@ -1063,13 +1131,13 @@ if __name__ == "__main__":
     
     sys.ubar = np.array([2,-0.5])
     sys.plot_trajectory()
-    #sys.animate_simulation()
+    sys.animate_simulation()
     
     sys = HolonomicMobileRobotwithObstacles()
     
     sys.ubar = np.array([1,1])
     sys.plot_trajectory()
-    sys.animate_simulation()
+    #sys.animate_simulation()
     
     
         

@@ -8,9 +8,26 @@ Created on Mon Oct 22 11:37:48 2018
 import numpy as np
 ###############################################################################
 from pyro.control import controller
-
-from pyro._utils import to_2D_arr
 ###############################################################################
+
+###############################################################################
+# Function
+###############################################################################
+
+def to_2D_arr(arr):
+    arr = np.asanyarray(arr)
+    if arr.ndim == 2:
+        return arr
+
+    if arr.ndim == 1:
+        return arr[np.newaxis]
+    elif arr.ndim == 0:
+        return arr[np.newaxis, np.newaxis]
+    else:
+        raise ValueError(
+            "Cannot expand array with %d dimensions to 2-D" % (arr.ndim)
+        )
+
 
 
 ###############################################################################
@@ -88,23 +105,46 @@ class ProportionalController(controller.StaticController):
     
     u = K * ( r - y )
     
+    -----------------------------------------
+    r  : reference signal vector       k x 1
+    y  : sensor signal vector          p x 1
+    u  : control inputs vector         m x 1
+    -----------------------------------------
+    
     """
     
     ###############################
-    def __init__(self, K):
-        self.K = to_2D_arr(K)
-
-        k = self.K.shape[1]
-        m = self.K.shape[0]
-        p = self.K.shape[1]
+    def __init__(self, m = 1 , p = 1 ):
         
-        super().__init__(k, m, p)
-
+        self.K = np.zeros((m,p))
+        
+        #self.K = to_2D_arr(K)
+        #m = self.K.shape[0]
+        #p = self.K.shape[1]
+        
+        super().__init__(p, m, p)
+        
         self.rbar = np.zeros((self.k,))
         self.name = "%d X %d Proportional Contrller" % self.K.shape
         
         self.ybar = np.zeros((self.p,))  # feedback offset
         self.ubar = np.zeros((self.m,))  # control input offset
+        
+    ############################
+    @classmethod
+    def from_matrix(cls, K):
+        """  """
+        
+        K = to_2D_arr(K)
+        
+        m = K.shape[0]
+        p = K.shape[1]
+        
+        instance = cls( m , p )
+        
+        instance.K = K
+        
+        return instance
         
         
     ##############################

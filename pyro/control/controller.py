@@ -200,18 +200,23 @@ class StaticController():
                 
         
         # Ploting
-        fig = plt.figure(figsize=(4, 4),dpi=300, frameon=True)
+        fig = plt.figure(figsize=(3, 2),dpi=300, frameon=True)
+        
         fig.canvas.manager.set_window_title('Control law for u[%i]'%i)
         ax  = fig.add_subplot(1,1,1)
         
-        plt.ylabel(yname, fontsize = 10 )
-        plt.xlabel(xname, fontsize = 10 )
+        ax.tick_params('both',labelsize = 5 )
+        plt.ylabel(yname, fontsize = 5 )
+        plt.xlabel(xname, fontsize = 5 )
         
-        im1 = plt.pcolormesh( X , Y , U, shading='gouraud')
+        im1 = plt.pcolormesh( X , Y , U, shading='gouraud' )
+        
+        cbar = plt.colorbar(im1)
+        cbar.ax.tick_params(labelsize=5)
+        
         
         plt.axis([xmin,xmax,ymin,ymax])
-    
-        plt.colorbar()
+
         plt.grid(True)
         plt.tight_layout() 
         plt.show()
@@ -274,7 +279,13 @@ class ClosedLoopSystem( system.ContinuousDynamicSystem ):
         self.u_lb = self.controller.r_lb
         
         # Plot params
-        self.linestyle = self.plant.linestyle
+        self.domain           = self.plant.domain
+        self.linestyle        = self.plant.linestyle
+        self.linestyle_plus   = self.plant.linestyle_plus
+        self.linescolor       = self.plant.linescolor
+        self.linescolor_plus  = self.plant.linescolor_plus
+        self.lines_plus       = self.plant.lines_plus
+        self.is_3d            = self.plant.is_3d
         
         # Default State and inputs        
         self.xbar = self.plant.xbar
@@ -425,10 +436,14 @@ class ClosedLoopSystem( system.ContinuousDynamicSystem ):
     #############################################
     # Make graph function use the internal sys
     #############################################
-
+    
+    
+    ###########################################################################
     def get_plotter(self):
         return self.plant.get_plotter()
-
+    
+    
+    ###########################################################################
     def get_animator(self):
         return self.plant.get_animator()
     
@@ -890,7 +905,6 @@ class DynamicClosedLoopSystem( ClosedLoopSystem ):
 
 if __name__ == "__main__":     
     """ MAIN TEST """
-    
     pass
 
     

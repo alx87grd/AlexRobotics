@@ -22,8 +22,5 @@ planner = randomtree.RRT( speed_controlled_robot , q_start )
 
 planner.load_solution('twolinkplan.npy')
 
-planner.plot_tree()
 planner.plot_open_loop_solution()
-
-speed_controlled_robot.traj = planner.trajectory
-speed_controlled_robot.animate_simulation( time_factor_video = 50.0 )
+planner.animate_solution( 50.0 )

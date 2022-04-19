@@ -5,10 +5,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pyro",
-    version="0.6-dev",
+    version="2.2",
     author="Alexandre Girard",
     author_email="alx87grd@gmail.com",
-    description=("Toolbox for robot dynamic simulation, analysis, "
+    description=("object-based toolbox for robot dynamic simulation, analysis, "
                  "control and planning"),
     long_description=long_description,
     long_description_content_type="text/markdown",

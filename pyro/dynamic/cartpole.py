@@ -182,6 +182,8 @@ class RotatingCartPole( mechanical.MechanicalSystem ):
         """
         
         lines_pts = [] # list of array (n_pts x 3) for each lines
+        lines_style = []
+        lines_color = []
         
         ###############################
         # ground line
@@ -195,6 +197,8 @@ class RotatingCartPole( mechanical.MechanicalSystem ):
         pts[4,:] = np.array([-1,-1,-1])
         
         lines_pts.append( pts )
+        lines_style.append( '-' )
+        lines_color.append( 'k' )
         
         ###########################
         # pendulum kinematic
@@ -222,8 +226,10 @@ class RotatingCartPole( mechanical.MechanicalSystem ):
 
         
         lines_pts.append( pts )
+        lines_style.append( 'o-' )
+        lines_color.append( 'b' )
                 
-        return lines_pts
+        return lines_pts , lines_style , lines_color
     
     
     

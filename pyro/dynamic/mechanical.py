@@ -273,6 +273,139 @@ class MechanicalSystem( system.ContinuousDynamicSystem ):
 
 
 
+class MechanicalSystemWithPositionInputs( MechanicalSystem  ):
+    """ 
+    Mechanical system with Equation of Motion in the form of
+    -------------------------------------------------------
+    H(q) ddq + C(q,dq) dq + d(q,dq) + g(q) = B(q,u) e(u)
+    -------------------------------------------------------
+    q      :  dim = (dof, 1)   : position variables 
+    dq     :  dim = (dof, 1)   : velocity variables     
+    ddq    :  dim = (dof, 1)   : acceleration variables
+    e(u)   :  dim = (m, 1)     : force input variables
+    H(q)   :  dim = (dof, dof) : inertia matrix
+    C(q)   :  dim = (dof, dof) : corriolis matrix
+    B(q,u) :  dim = (dof, m)   : actuator matrix
+    ddq    :  dim = (dof, 1)   : acceleration variables
+    d(q,dq):  dim = (dof, 1)   : state-dependent dissipative forces
+    g(q)   :  dim = (dof, 1)   : state-dependent conservatives forces
+    
+    """
+    
+    ############################
+    def __init__(self, dof = 1 , force_inputs = 1, other_inputs = 1):
+        """ """
+        
+        # Degree of Freedom
+        self.dof = dof
+        
+        # Nb of actuators
+        self.actuators = force_inputs
+        
+        # Dimensions
+        n = dof * 2 
+        m = force_inputs + other_inputs 
+        p = dof * 2
+        
+        # initialize standard params
+        system.ContinuousDynamicSystem.__init__(self, n, m, p)
+        
+        # Name
+        self.name = str(dof) + 'DoF Mechanical System'
+        
+        # Labels, bounds and units
+        for i in range(dof):
+            # joint angle states
+            self.x_ub[i] = + np.pi * 2
+            self.x_lb[i] = - np.pi * 2
+            self.state_label[i] = 'Angle '+ str(i)
+            self.state_units[i] = '[rad]'
+            # joint velocity states
+            self.x_ub[i+dof] = + np.pi * 2
+            self.x_lb[i+dof] = - np.pi * 2
+            self.state_label[i+dof] = 'Velocity ' + str(i)
+            self.state_units[i+dof] = '[rad/sec]'
+        for i in range(self.actuators):
+            self.u_ub[i] = + 5
+            self.u_lb[i] = - 5
+            self.input_label[i] = 'Force ' + str(i)
+            self.input_units[i] ='[N]'
+        self.output_label = self.state_label
+        self.output_units = self.state_units
+            
+    ###########################################################################
+    # The following functions needs to be overloaded by child classes
+    # to represent the dynamic of the system
+    ###########################################################################
+    
+    
+    ###########################################################################
+    def B(self, q , u ):
+        """ 
+        Actuator Matrix  : dof x m
+        """
+        
+        B = np.zeros( ( self.dof , self.actuators ) )
+        
+        for i in range(min(self.actuators,self.dof)):
+            B[i,i] = 1                # Diag matrix for the first m rows
+        
+        return B
+    
+    
+    ###########################################################################
+    # No need to overwrite the following functions for custom system
+    ###########################################################################
+    
+    #############################
+    def u2e( self, u ):
+        """  """
+        
+        e = u[ 0 : self.actuators ] 
+        
+        return e
+    
+    
+    ##############################
+    def generalized_forces(self, q  , dq  , ddq , t = 0 ):
+        """ Computed generalized forces given a trajectory """  
+        
+        H = self.H( q )
+        C = self.C( q , dq )
+        g = self.g( q )
+        d = self.d( q , dq )
+                
+        # Generalized forces
+        forces = np.dot( H , ddq ) + np.dot( C , dq ) + g + d
+        
+        return forces
+    
+    
+    ##############################
+    def actuator_forces(self, q  , dq  , ddq , t = 0 ):
+        """ Computed actuator forces given a trajectory (inverse dynamic) """  
+        
+        raise NotImplementedError
+        
+    
+    ##############################
+    def ddq(self, q , dq , u , t = 0 ):
+        """ Computed accelerations given actuator forces (foward dynamic) """  
+        
+        H = self.H( q )
+        C = self.C( q , dq )
+        g = self.g( q  )
+        d = self.d( q , dq)
+        
+        B = self.B( q , u )
+        e = self.u2e( u )
+        
+        ddq = np.dot( np.linalg.inv( H ) ,  ( np.dot( B , e )  
+                                            - np.dot( C , dq ) - g - d ) )
+        
+        return ddq
+
+
     
 '''
 #################################################################

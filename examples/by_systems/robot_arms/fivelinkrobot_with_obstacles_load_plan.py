@@ -22,7 +22,6 @@ planner = randomtree.RRT( speed_controlled_robot , q_start )
 
 planner.load_solution('fivelinkplan.npy')
 
-planner.plot_tree()
 planner.plot_open_loop_solution()
 
 speed_controlled_robot.traj = planner.trajectory

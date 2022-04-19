@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 ###############################################################################
 from pyro.dynamic import system
 from pyro.dynamic import mechanical
+from pyro.dynamic import pendulum
 ###############################################################################
 
 
@@ -369,11 +370,12 @@ class SpeedControlledManipulator( system.ContinuousDynamicSystem ):
         
         instance = cls( Manipulator.dof , Manipulator.e )
         
-        instance.forward_kinematic_lines    = Manipulator.forward_kinematic_lines
-        instance.forward_kinematic_domain   = Manipulator.forward_kinematic_domain
-        instance.forward_kinematic_effector = Manipulator.forward_kinematic_effector
-        instance.J                          = Manipulator.J
-        instance.isavalidstate              = Manipulator.isavalidstate
+        instance.forward_kinematic_lines      = Manipulator.forward_kinematic_lines
+        instance.forward_kinematic_lines_plus = Manipulator.forward_kinematic_lines_plus
+        instance.forward_kinematic_domain     = Manipulator.forward_kinematic_domain
+        instance.forward_kinematic_effector   = Manipulator.forward_kinematic_effector
+        instance.J                            = Manipulator.J
+        instance.isavalidstate                = Manipulator.isavalidstate
         
         return instance
         
@@ -632,7 +634,9 @@ class OneLinkManipulator( Manipulator ):
         
         """
         
-        lines_pts = [] # list of array (n_pts x 3) for each lines
+        lines_pts   = [] # list of array (n_pts x 3) for each lines
+        lines_style = []
+        lines_color = []
         
         ###############################
         # ground line
@@ -643,6 +647,8 @@ class OneLinkManipulator( Manipulator ):
         pts[1,:] = np.array([+10,0,0])
         
         lines_pts.append( pts )
+        lines_style.append('--')
+        lines_color.append('k')
         
         ###########################
         # pendulum kinematic
@@ -653,7 +659,7 @@ class OneLinkManipulator( Manipulator ):
         [c1,s1] = self.trig( q )
         
         l = self.l1 * 0.9
-        h = self.l1 * 0.1
+        h = self.l1 * 0.07
         
         pts[1,0] = 0 * s1 + h * c1
         pts[1,1] = 0 * c1 - h * s1
@@ -668,6 +674,8 @@ class OneLinkManipulator( Manipulator ):
         pts[4,1] = 0 * c1 + h * s1
         
         lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('b')
         
         
         ###########################
@@ -699,8 +707,19 @@ class OneLinkManipulator( Manipulator ):
         
         
         lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('b')
                 
-        return lines_pts
+        return lines_pts , lines_style , lines_color
+    
+    ###########################################################################
+    def forward_kinematic_lines_plus(self, x , u , t ):
+        
+        x[0] = np.pi - x[0]
+        u[0] = -u[0]
+        
+
+        return pendulum.SinglePendulum.forward_kinematic_lines_plus(self, x, u , t)
 
 
 
@@ -934,7 +953,9 @@ class TwoLinkManipulator( Manipulator ):
         
         """
         
-        lines_pts = [] # list of array (n_pts x 3) for each lines
+        lines_pts   = [] # list of array (n_pts x 3) for each lines
+        lines_style = []
+        lines_color = []
         
         ###############################
         # ground line
@@ -945,6 +966,8 @@ class TwoLinkManipulator( Manipulator ):
         pts[1,:] = np.array([+10,0,0])
         
         lines_pts.append( pts )
+        lines_style.append('--')
+        lines_color.append('k')
         
         ###########################
         # pendulum kinematic
@@ -962,8 +985,21 @@ class TwoLinkManipulator( Manipulator ):
         pts[2,1] = self.l1 * c1 + self.l2 * c12
         
         lines_pts.append( pts )
+        lines_style.append('o-')
+        lines_color.append('b')
                 
-        return lines_pts
+        return lines_pts , lines_style , lines_color
+    
+    
+    ###########################################################################
+    def forward_kinematic_lines_plus(self, x , u , t ):
+        
+        #x[0] = x[0]
+        #x[1] = np.pi - x[0]
+        #u[0] = -u[0]
+        
+
+        return pendulum.DoublePendulum.forward_kinematic_lines_plus(self, x, u , t)
     
 
 
@@ -1321,6 +1357,8 @@ class ThreeLinkManipulator3D( Manipulator ):
         """
         
         lines_pts = [] # list of array (n_pts x 3) for each lines
+        lines_style = []
+        lines_color = []
         
         ###############################
         # ground line
@@ -1334,6 +1372,8 @@ class ThreeLinkManipulator3D( Manipulator ):
         pts[4,:] = np.array([-1,-1,0])
         
         lines_pts.append( pts )
+        lines_style.append('--')
+        lines_color.append('k')
         
         ###########################
         # robot kinematic
@@ -1372,10 +1412,12 @@ class ThreeLinkManipulator3D( Manipulator ):
         pts[3,0] = x3
         pts[3,1] = y3
         pts[3,2] = z3 
-        
+
         lines_pts.append( pts )
-                
-        return lines_pts
+        lines_style.append('o-')
+        lines_color.append('b')
+ 
+        return lines_pts , lines_style , lines_color
 
 
 
@@ -1519,7 +1561,9 @@ class FiveLinkPlanarManipulator( Manipulator ):
         
         """
         
-        lines_pts = [] # list of array (n_pts x 3) for each lines
+        lines_pts   = [] # list of array (n_pts x 3) for each lines
+        lines_style = []
+        lines_color = []
         
         ###############################
         # ground line
@@ -1530,6 +1574,8 @@ class FiveLinkPlanarManipulator( Manipulator ):
         pts[1,:] = np.array([+10,0,0])
         
         lines_pts.append( pts )
+        lines_style.append('--')
+        lines_color.append('k')
         
         ###########################
         # robot kinematic
@@ -1553,8 +1599,10 @@ class FiveLinkPlanarManipulator( Manipulator ):
         pts[5,1] = self.l[4] * cos_abs[4] + pts[4,1]
         
         lines_pts.append( pts )
-                
-        return lines_pts
+        lines_style.append('o-')
+        lines_color.append('b')
+ 
+        return lines_pts , lines_style , lines_color
 
 
 
@@ -1634,7 +1682,7 @@ class TwoLinkManipulatorwithObstacles( TwoLinkManipulator ):
         
         """
         
-        lines_pts = TwoLinkManipulator.forward_kinematic_lines(self, q )
+        lines_pts , lines_style , lines_color = TwoLinkManipulator.forward_kinematic_lines(self, q )
         
 
         ###########################
@@ -1661,9 +1709,11 @@ class TwoLinkManipulatorwithObstacles( TwoLinkManipulator ):
             pts[4,1] = obs[0][1]
             
             lines_pts.append( pts )
+            lines_style.append('-')
+            lines_color.append('k')
             
                 
-        return lines_pts
+        return lines_pts , lines_style , lines_color
 
     ###########################################################################
 
@@ -1730,7 +1780,7 @@ class FiveLinkPlanarManipulatorwithObstacles( FiveLinkPlanarManipulator ):
         
         """
         
-        lines_pts = FiveLinkPlanarManipulator.forward_kinematic_lines(self, q )
+        lines_pts , lines_style , lines_color = FiveLinkPlanarManipulator.forward_kinematic_lines(self, q )
         
 
         ###########################
@@ -1757,9 +1807,10 @@ class FiveLinkPlanarManipulatorwithObstacles( FiveLinkPlanarManipulator ):
             pts[4,1] = obs[0][1]
             
             lines_pts.append( pts )
-            
+            lines_style.append('-')
+            lines_color.append('k')
                 
-        return lines_pts
+        return lines_pts , lines_style , lines_color
 
     ###########################################################################
     
@@ -1775,10 +1826,12 @@ class FiveLinkPlanarManipulatorwithObstacles( FiveLinkPlanarManipulator ):
 
 if __name__ == "__main__":     
     
-    sys = OneLinkManipulator()
-    #sys = TwoLinkManipulator()
+    #sys = OneLinkManipulator()
+    sys = TwoLinkManipulator()
     
-    sys.x0[0] = 0.1
+    sys.x0[0]   = 0.1
+    sys.ubar[0] = 4
+    sys.ubar[1] = 4
     sys.animate_simulation()
     sys.plot_trajectory()
     sys.plot_end_effector_trajectory()
@@ -1789,9 +1842,9 @@ if __name__ == "__main__":
     #sys.animate_simulation( is_3d = True )
     #sys.plot_trajectory()
     
-    sys = FiveLinkPlanarManipulator()
-    sys.ubar = np.array([1,1,1,1,1])
-    sys.animate_simulation()
+    #sys = FiveLinkPlanarManipulator()
+    #sys.ubar = np.array([1,1,1,1,1])
+    #sys.animate_simulation()
     
     #aaa = TwoLinkManipulatorwithObstacles()
     #bbb = SpeedControlledManipulator.from_manipulator( aaa )
