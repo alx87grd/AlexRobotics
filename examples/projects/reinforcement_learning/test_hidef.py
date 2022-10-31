@@ -32,16 +32,19 @@ qcf = costfunction.QuadraticCostFunction.from_sys(sys)
 
 qcf.xbar   = np.array([ -3.14 , 0 ]) # target
 qcf.R[0,0] = 10
-qcf.INF    = 1000000
+qcf.INF    = 300
 
+qcf.S[0,0] = 10.0
+qcf.S[1,1] = 10.0
 
 # DP algo
 
 dp = dprog.DynamicProgrammingWithLookUpTable( grid_sys, qcf)
 
-dp.solve_bellman_equation( tol = 0.01 , animate_policy = True )
-dp.plot_cost2go(150)
-dp.save_latest('test_hidef')
+dp.solve_bellman_equation( tol = 0.1 )
+
+dp.plot_cost2go()
+dp.plot_policy()
 
 
 #asign controller
@@ -51,7 +54,7 @@ cl_sys = controller.ClosedLoopSystem( sys , ctl )
 ##############################################################################
 
 # Simulation and animation
-cl_sys.x0   = np.array([0,0,0,0])
+cl_sys.x0   = np.array([0,0])
 cl_sys.compute_trajectory( 30, 10001, 'euler')
 cl_sys.plot_trajectory('xu')
 cl_sys.plot_phase_plane_trajectory()

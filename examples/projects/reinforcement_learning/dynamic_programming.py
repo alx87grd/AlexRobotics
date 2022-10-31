@@ -344,18 +344,18 @@ class DynamicProgramming:
         
         text = ax.text(0.05, 0.05, '', transform=ax.transAxes, fontsize = 8 )
         
-        self.cost2go_fig = [fig, ax, pcm, text]
+        self.cost2go_fig = [fig, ax, pcm, text, i , j ]
         
         if show: plt.pause( 0.001 )
         #plt.ion()
         
         
     ################################
-    def update_cost2go_plot(self, i = 0 , j = 1 , show = True ):
+    def update_cost2go_plot(self, show = True ):
         
         J_grid = self.grid_sys.get_grid_from_array( self.J )
         
-        J_2d = self.grid_sys.get_2D_slice_of_grid( J_grid , i , j )
+        J_2d = self.grid_sys.get_2D_slice_of_grid( J_grid , self.cost2go_fig[4] , self.cost2go_fig[5] )
                
         self.cost2go_fig[2].set_array( np.ravel( J_2d.T ) )
         self.cost2go_fig[3].set_text('Optimal cost2go at time = %4.2f' % ( self.t ))
@@ -366,22 +366,22 @@ class DynamicProgramming:
     ################################
     def plot_policy(self , k = 0 , i = 0 , j = 1 , show = True ):
                
-        fig, ax, pcm = self.grid_sys.plot_control_input_from_policy( self.pi , k)
+        fig, ax, pcm = self.grid_sys.plot_control_input_from_policy( self.pi , k , i , j)
         
         text = ax.text(0.05, 0.05, '', transform=ax.transAxes, fontsize = 8 )
         
-        self.policy_fig = [fig, ax, pcm, text]
+        self.policy_fig = [fig, ax, pcm, text, k , i , j ]
         
         if show: plt.pause( 0.001 )
         #plt.ion()
         
         
     ################################
-    def update_policy_plot(self, k , i = 0 , j = 1 , show = True  ):
+    def update_policy_plot(self, show = True  ):
         
-        uk    = self.grid_sys.get_input_from_policy( self.pi, k)
+        uk    = self.grid_sys.get_input_from_policy( self.pi, self.policy_fig[4] )
         uk_nd = self.grid_sys.get_grid_from_array( uk ) 
-        uk_2d = self.grid_sys.get_2D_slice_of_grid( uk_nd , i , j )
+        uk_2d = self.grid_sys.get_2D_slice_of_grid( uk_nd , self.policy_fig[5] , self.policy_fig[6] )
                
         self.policy_fig[2].set_array( np.ravel( uk_2d.T ) )
         self.policy_fig[3].set_text('Optimal policy at time = %4.2f' % ( self.t ))
@@ -390,13 +390,13 @@ class DynamicProgramming:
         
         
     ################################
-    def animate_cost2go(self , show = True , save = False , file_name = 'cost2go_animation'):
+    def animate_cost2go(self, i = 0 , j = 1 , jmax = None , show = True , save = False ,  file_name = 'cost2go_animation'):
         
         self.J  = self.J_list[0]
         self.pi = self.pi_list[0]
         self.t  = self.t_list[0]
         self.clean_infeasible_set()
-        self.plot_cost2go( show = False  )
+        self.plot_cost2go( jmax = jmax , i = i , j = j , show = False  )
 
         self.ani = animation.FuncAnimation( self.cost2go_fig[0], self.__animate_cost2go, 
                                                 len(self.J_list), interval = 20 )
@@ -404,6 +404,8 @@ class DynamicProgramming:
         if save: self.ani.save( file_name + '.gif', writer='imagemagick', fps=30)
         
         if show: self.cost2go_fig[0].show()
+        
+        return self.ani
         
     
     ################################
@@ -417,13 +419,13 @@ class DynamicProgramming:
         
         
     ################################
-    def animate_policy(self , show = True , save = False , file_name = 'policy_animation'):
+    def animate_policy(self , k = 0 , i = 0 , j = 1 , show = True , save = False , file_name = 'policy_animation'):
         
         self.J  = self.J_list[1]
         self.pi = self.pi_list[1]
         self.t  = self.t_list[1]
         self.clean_infeasible_set()
-        self.plot_policy( k = 0 , show = False )
+        self.plot_policy( k = k , i = i , j = j , show = False )
 
         self.ani = animation.FuncAnimation( self.policy_fig[0], self.__animate_policy, 
                                                 len(self.pi_list)-1, interval = 20 )
@@ -431,6 +433,8 @@ class DynamicProgramming:
         if save: self.ani.save( file_name + '.gif', writer='imagemagick', fps=30)
         
         if show: self.policy_fig[0].show()
+        
+        return self.ani
         
     
     ################################
@@ -440,7 +444,7 @@ class DynamicProgramming:
         self.pi = self.pi_list[i+1]
         self.t  = self.t_list[i+1]
         self.clean_infeasible_set()
-        self.update_policy_plot( k = 0 , show = False )
+        self.update_policy_plot( show = False )
         
     
     ################################

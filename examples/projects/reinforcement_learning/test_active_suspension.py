@@ -60,7 +60,7 @@ ctl = dp.get_lookup_table_controller()
 cl_sys = ctl + sys
 
 # Simulation and animation
-cl_sys.x0   = np.array([0,0,-5])
-cl_sys.compute_trajectory( 20, 10001, 'euler')
+cl_sys.x0   = np.array([0,0,-60])
+cl_sys.compute_trajectory( 10, 10001, 'euler')
 cl_sys.plot_trajectory('xu')
 cl_sys.animate_simulation()
