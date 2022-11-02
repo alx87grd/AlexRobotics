@@ -22,13 +22,13 @@ class SingleMass( statespace.StateSpaceSystem ):
     """
 
     ############################
-    def __init__(self, m=1, k=2, b=0):
+    def __init__(self, mass=1, k=2, b=0):
         """ """
 
         # params
-        self.m = m
-        self.k = k
-        self.b = b
+        self.mass = mass
+        self.k    = k
+        self.b    = b
         
         self.l1 = 2
         self.l2 = 1
@@ -56,9 +56,9 @@ class SingleMass( statespace.StateSpaceSystem ):
         """ 
         """
         self.A = np.array([ [ 0              ,              1 ], 
-                            [ -self.k/self.m , -self.b/self.m ] ])
+                            [ -self.k/self.mass , -self.b/self.mass ] ])
         self.B = np.array([ [ 0 ],
-                            [ 1 /self.m ]])
+                            [ 1 /self.mass ]])
         self.C = np.array([ [ 1 , 0 ]])
         self.D = np.array([ [ 0 ]])
                 
