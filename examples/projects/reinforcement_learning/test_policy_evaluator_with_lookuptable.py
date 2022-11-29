@@ -48,7 +48,7 @@ ctl = dp.get_lookup_table_controller()
 #evaluator.plot_cost2go()
 
 # Evaluate on new grid
-grid_sys2 = discretizer.GridDynamicSystem( sys , [301,301] , [11] )
+grid_sys2 = discretizer.GridDynamicSystem( sys , [301,301] , [11] ,  )
 
 evaluator2 = dprog.PolicyEvaluatorWithLookUpTable(ctl, grid_sys2, qcf)
 evaluator2.solve_bellman_equation()
