@@ -598,11 +598,144 @@ class DynamicProgramming2DRectBivariateSpline( DynamicProgrammingWithLookUpTable
         
         
 
-        
-    
 
+###############################################################################
+### Policy Evaluation
+###############################################################################
+
+class PolicyEvaluator( DynamicProgramming ):
+    """ Evaluate the cost2o of a given control law """
+    
+    ############################
+    def __init__(self, ctl , grid_sys , cost_function , final_time = 0 ):
+        
+        
+        DynamicProgramming.__init__(self, grid_sys, cost_function, final_time )
+        
+        self.ctl = ctl
+        
+        # Evaluate policy (control law on the grid)
+                        
+                
+    ###############################
+    def compute_backward_step(self):
+        """ One step of value iteration """
+        
+        # For all state nodes        
+        for s in range( self.grid_sys.nodes_n ):  
             
+                x = self.grid_sys.state_from_node_id[ s , : ]
+                
+                ######################################
+                # Action taken by the controller
+                r = self.ctl.rbar
+                u = self.ctl.c( x , r , self.t )   
+                ######################################
+                    
+                # If action is in allowable set
+                if self.sys.isavalidinput( x , u ):
+                    
+                    # Forward dynamics 
+                    x_next = self.sys.f( x , u , self.t ) * self.grid_sys.dt + x
+                    
+                    # if the next state is not out-of-bound
+                    if self.sys.isavalidstate(x_next):
+
+                        # Estimated (interpolation) cost to go of arrival x_next state
+                        J_next = self.J_interpol( x_next )
+                        
+                        # Cost-to-go of a given action
+                        Q = self.cf.g( x , u , self.t ) * self.grid_sys.dt + self.alpha * J_next
+                        
+                    else:
+                        
+                        # Out of bound terminal cost
+                        Q = self.cf.INF # TODO add option to customize this
+                    
+                else:
+                    
+                    # Invalide control input at this state
+                    Q = self.cf.INF
+                        
+                self.J[ s ]  = Q
+                
+                
+
+###############################################################################
+
+class PolicyEvaluatorWithLookUpTable( PolicyEvaluator ):
+    """ Evaluate the cost2o of a given control law """
+    
+    ############################
+    def __init__(self, ctl , grid_sys , cost_function , final_time = 0 ):
+        
+        PolicyEvaluator.__init__(self, ctl , grid_sys, cost_function, final_time)
+        
+        self.compute_lookuptable()
+    
+    
+    ###############################
+    def compute_lookuptable(self):
+        """ One step of value iteration """
+        
+        start_time = time.time()
+        print('Computing g(x,u,t) and X-next look-up table..  ', end = '')
+        
+        self.x_next_table = np.zeros( ( self.grid_sys.nodes_n , self.sys.n ) , dtype = float ) # lookup table for dynamic
+        self.G            = np.zeros(   self.grid_sys.nodes_n                , dtype = float ) # lookup table for cost
+
+        # For all state nodes        
+        for s in range( self.grid_sys.nodes_n ):  
             
+                x = self.grid_sys.state_from_node_id[ s , : ]
+                
+                ######################################
+                # Action taken by the controller
+                r = self.ctl.rbar
+                u = self.ctl.c( x , r , self.t )   
+                ######################################
+                
+                # Forward dynamics 
+                x_next = self.sys.f( x , u , self.t ) * self.grid_sys.dt + x
+                
+                # Save to llokup table
+                self.x_next_table[s,:] = x_next
+                
+                # If action is in allowable set
+                if self.sys.isavalidinput( x , u ):
+                    
+                    # if the next state is not out-of-bound
+                    if self.sys.isavalidstate(x_next):
+                        
+                        self.G[ s ] = self.cf.g( x , u , self.t ) * self.grid_sys.dt
+                    
+                    else:
+                        # Out of bound cost (J_interpol return 0 in this case)
+                        self.G[ s ] = self.cf.INF
+                
+                else:
+                    # Not allowable input at this state
+                    self.G[ s ] = self.cf.INF
+        
+        # Print update
+        computation_time = time.time() - start_time
+        print('completed in %4.2f sec'%computation_time)
+    
+                
+    ###############################
+    def compute_backward_step(self):
+        """ One step of value iteration """
+        
+        self.J       = np.zeros(  self.grid_sys.nodes_n , dtype = float )
+        self.Jx_next = np.zeros(  self.grid_sys.nodes_n , dtype = float )
+        
+        # Computing the J_next of all x_next in the look-up table
+        self.Jx_next = self.J_interpol( self.x_next_table )
+        
+        # Matrix version of computing all Q values
+        self.J       = self.G + self.alpha * self.Jx_next
+
+
             
 
 
