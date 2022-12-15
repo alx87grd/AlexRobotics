@@ -403,7 +403,7 @@ class ContinuousDynamicSystem:
         
     #############################
     def compute_trajectory(
-        self, tf=10, n=None, solver='ode', **solver_args):
+        self, tf=10, n=10001, solver='ode', **solver_args):
         """
         Simulation of time evolution of the system
         ------------------------------------------------
