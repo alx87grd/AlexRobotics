@@ -220,6 +220,8 @@ directory will be taken into account when importing the pyro module.
 
 ### Running tests ###
 
+Note: most tests are currently broken.
+
 Running the test suite requires installing [pytest](https://docs.pytest.org/).
 To run all tests:
 
@@ -230,4 +232,4 @@ pytest examples/projects/tests
 By running this command from the top level of the pyro repository, `pyro` will
 be imported directly from the local folder.
 
-Note: most tests are currently broken.
+
