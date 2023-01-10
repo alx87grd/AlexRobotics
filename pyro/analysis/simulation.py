@@ -223,7 +223,7 @@ class Simulator:
 
     ############################
     def __init__(
-        self, ContinuousDynamicSystem, tf=10, n=None, solver='ode'):
+        self, ContinuousDynamicSystem, tf=10, n=10001, solver='ode'):
 
         self.cds    = ContinuousDynamicSystem
         self.t0     = 0
