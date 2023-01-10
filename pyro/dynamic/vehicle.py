@@ -1105,6 +1105,97 @@ class UdeSRacecar( KinematicCarModelwithObstacles ):
         ]
         
 
+
+##############################################################################
+#
+##############################################################################
+        
+class ConstantSpeedKinematicCarModel( KinematicCarModel ):
+    """ 
+    Equations of Motion
+    -------------------------
+    dx   = V cos ( phi )
+    dy   = V sin ( phi )
+    dphi = V/l tan ( beta )
+    """
+    
+    ############################
+    def __init__(self):
+        """ """
+    
+        # Dimensions
+        self.n = 3   
+        self.m = 1   
+        self.p = 3
+        
+        # initialize standard params
+        system.ContinuousDynamicSystem.__init__(self, self.n, self.m, self.p)
+        
+        # Labels
+        self.name = 'Constant Speed Kinematic Car Model'
+        self.state_label = ['x','y','theta']
+        self.input_label = ['beta']
+        self.output_label = ['x','y','theta']
+        
+        # Units
+        self.state_units = ['[m]','[m]','[rad]']
+        self.input_units = ['[rad]']
+        self.output_units = ['[m]','[m]','[rad]']
+        
+        # State working range
+        self.x_ub = np.array([+5,+2,+3.14])
+        self.x_lb = np.array([-5,-2,-3.14])
+        
+        # Model param
+        self.speed  = 2.00
+        self.width  = 2.00
+        self.a      = 2.00
+        self.b      = 3.00
+        self.lenght = self.a+self.b   
+        
+        self.lenght_tire = 0.60
+        self.width_tire  = 0.25
+        
+        # Graphic output parameters 
+        self.dynamic_domain  = True
+        self.dynamic_range   = self.lenght * 2
+        
+        
+    #############################
+    def f(self, x = np.zeros(3) , u = np.zeros(1) , t = 0 ):
+        """ 
+        Continuous time foward dynamics evaluation
+        
+        dx = f(x,u,t)
+        
+        INPUTS
+        x  : state vector             n x 1
+        u  : control inputs vector    m x 1
+        t  : time                     1 x 1
+        
+        OUPUTS
+        dx : state derivative vectror n x 1
+        
+        """
+        
+        dx = np.zeros(self.n) # State derivative vector
+
+        dx[0] = self.speed * np.cos( x[2] )
+        dx[1] = self.speed * np.sin( x[2] )
+        dx[2] = self.speed * np.tan( u[0] ) * ( 1. / self.lenght) 
+        
+        return dx
+    
+    
+    #############################
+    def xut2q( self, x , u , t ):
+        """ compute config q """
+        
+        q   = np.append(  x , u[0] ) # steering angle is part of the config
+        
+        return q
+        
+
 '''
 #################################################################
 ##################          Main                         ########

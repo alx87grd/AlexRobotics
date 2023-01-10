@@ -413,6 +413,8 @@ class ClosedLoopSystem( system.ContinuousDynamicSystem ):
         
         pp.plot_finish()
         
+        pp.phasefig.show()
+        
         return pp
         
     
@@ -464,6 +466,36 @@ class ClosedLoopSystem( system.ContinuousDynamicSystem ):
         
         
     ###########################################################################
+    def plot_phase_plane_trajectory(self, x_axis=0, y_axis=1):
+        """
+        Plot a trajectory in the Phase Plane
+        ---------------------------------------------------------------
+        note: will call compute_trajectory if no simulation data is present
+        
+        """
+        
+        # Check is trajectory is already computed
+        if self.traj == None:
+            self.compute_trajectory()
+            
+        traj = self.traj
+        
+        pp = phaseanalysis.PhasePlot( self , x_axis , y_axis )
+        pp.plot()
+
+        plt.plot(traj.x[:,x_axis], traj.x[:,y_axis], 'b-') # path
+        plt.plot([traj.x[0,x_axis]], [traj.x[0,y_axis]], 'ko') # start
+        plt.plot([traj.x[-1,x_axis]], [traj.x[-1,y_axis]], 'rx') # end
+        
+        plt.draw()
+
+        pp.phasefig.tight_layout()
+        
+        plt.draw()
+        plt.show()
+        
+        
+    ###########################################################################
     def plot_phase_plane_trajectory_closed_loop(self, x_axis=0, y_axis=1):
         """ 
         Plot Phase Plane vector field of the system and the trajectory
@@ -475,8 +507,37 @@ class ClosedLoopSystem( system.ContinuousDynamicSystem ):
         
         """
         
-        plotter = self.get_plotter()
-        plotter.phase_plane_trajectory_closed_loop( self.traj, x_axis, y_axis)
+        pp = phaseanalysis.PhasePlot( self , x_axis , y_axis )
+        
+        pp.compute_grid()
+        pp.plot_init()
+        
+        # Closed-loop Behavior
+        pp.color = 'r'
+        pp.compute_vector_field()
+        pp.plot_vector_field()
+        
+        # Open-Loop Behavior
+        pp.f     = self.plant.f
+        pp.ubar  = self.plant.ubar
+        pp.color = 'b'
+        pp.compute_vector_field()
+        pp.plot_vector_field()
+        
+        # Check is trajectory is already computed
+        if self.traj == None:
+            self.compute_trajectory()
+            
+        traj = self.traj
+        
+        plt.plot(traj.x[:,x_axis], traj.x[:,y_axis], 'b-') # path
+        plt.plot([traj.x[0,x_axis]], [traj.x[0,y_axis]], 'ko') # start
+        plt.plot([traj.x[-1,x_axis]], [traj.x[-1,y_axis]], 'rx') # end
+        
+        pp.plot_finish()
+        
+        pp.phasefig.show()
+        
         
         
     ###########################################################################
