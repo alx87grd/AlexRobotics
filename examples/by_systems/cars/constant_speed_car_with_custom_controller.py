@@ -38,6 +38,7 @@ class CarController( controller.StaticController ) :
         
         y_desired = r[0]
         
+        lenght = 5.0
         speed = 2.0
         x_car = y[0]
         y_car = y[1]
@@ -46,7 +47,8 @@ class CarController( controller.StaticController ) :
         
         # TODO your own feedback law below
         ########################
-        delta = 0.5 * ( y_desired - y_car )
+        delta = 1.5 * ( y_desired - y_car )
+        delta = np.clip( delta , -1.5 , 1.5)
         ########################
         
         u = np.array([ delta ])
@@ -59,14 +61,17 @@ ctl = CarController()
 cl_sys = ctl + sys
 
 
-cl_sys.x_ub = np.array([+8.,+8.,+8.])
-cl_sys.x_lb = np.array([-8.,-8.,-8.])
+
 
 cl_sys.plot_phase_plane(1,2)
 #cl_sys.plot_phase_plane_closed_loop(1,2)
 
+cl_sys.x_ub = np.array([+8.,+8.,+8.])
+cl_sys.x_lb = np.array([-8.,-8.,-8.])
+
 # Animate the simulation
-cl_sys.x0[1] = 1.0
+cl_sys.x0[1] = 6.0
+cl_sys.x0[2] = 7.0
 cl_sys.plot_trajectory()
 cl_sys.animate_simulation()
 cl_sys.plot_phase_plane_trajectory(1,2)
