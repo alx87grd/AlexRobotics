@@ -36,7 +36,7 @@ class SinglePendulumAdaptativeController( controller.DynamicController ):
         super().__init__(k, l, m, p)
         
         # Init internal states
-        self.z0 = np.array([0.2,0.2])
+        self.z0 = np.array([0.0,0.0])
         
         
         self.internal_state_label = []
@@ -115,6 +115,8 @@ class SinglePendulumAdaptativeController( controller.DynamicController ):
         
         return [ ddq_d , dq_d , q_d ] 
     
+
+
 
 ##############################################################################
         
