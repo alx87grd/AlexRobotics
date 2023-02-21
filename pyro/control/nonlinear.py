@@ -98,8 +98,8 @@ class ComputedTorqueController( controller.StaticController ) :
         """
         [ q , dq ]     = self.model.x2q( x )  
         
-        ddq_d          =   np.zeros( self.model.dof )
-        dq_d           =   np.zeros( self.model.dof )
+        ddq_d          = np.zeros( self.model.dof )
+        dq_d           = np.zeros( self.model.dof )
 
         ddq_r          = self.compute_ddq_r( ddq_d , dq_d , q_d , dq , q )
         

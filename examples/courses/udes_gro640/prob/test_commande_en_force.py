@@ -24,8 +24,8 @@ ctl   = CustomDrillingController( model ) # Empty do nothing controller template
 clsys = ctl + sys
 
 # États initiaux
-#clsys.x0 =  np.array([0.7,1.45,-1.4,0,0,0]) #  Tombe dans le trou
-clsys.x0 =  np.array([0,1.4,-1.3,0,0,0]) #
+clsys.x0 =  np.array([0.7,1.45,-1.4,0,0,0]) #  Tombe dans le trou
+#clsys.x0 =  np.array([0,1.4,-1.3,0,0,0]) #
 
 # Simulation
 tf = 6
@@ -56,7 +56,7 @@ fig , plots = matplotlib.pyplot.subplots(3)
 plots[0].plot( t , f_traj[:,0] )
 plots[1].plot( t , f_traj[:,1] )
 plots[2].plot( t , f_traj[:,2] )
-fig.canvas.set_window_title('Contact forces')
+fig.canvas.manager.set_window_title('Contact forces')
 
 
 clsys.animate_simulation( is_3d = True )

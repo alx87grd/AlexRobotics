@@ -42,7 +42,7 @@ cl_sys = ctl + sys
 
 # Simultation
 cl_sys.x0[0]  = 3.14
-cl_sys.x0[1]  = 0
+cl_sys.x0[1]  = 2.0
 
 cl_sys.state_label[4] = 'H1'
 cl_sys.state_label[5] = 'H2'

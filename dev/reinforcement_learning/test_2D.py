@@ -41,6 +41,7 @@ dp = dprog.DynamicProgrammingWithLookUpTable( grid_sys, qcf)
 #dp.compute_steps(200)
 # dp.plot_policy()
 
+#dp.solve_bellman_equation( tol = 1 , animate_cost2go = True )
 dp.solve_bellman_equation( tol = 1 , animate_policy = True )
 #dp.plot_cost2go(150)
 

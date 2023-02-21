@@ -21,18 +21,17 @@ class SinglePendulumAdaptativeController( controller.DynamicController ):
         self.name = 'Adaptive controller'
 
         # Params
-        self.A = np.zeros(2)
-        self.T=np.eye(2)
-        self.Kd = 1
-        self.lam  = 1   # Sliding surface slope
-        self.nab  = 0.1 # Min convergence rate
+        self.P    = np.eye(2)
+        self.K    = 1
+        self.lam  = 1   # gain
         
         self.model=model
         
         k = model.dof   
         m = model.m
         p = model.p
-        l = 2
+        
+        l = 2 # number of states in the controller
         
         super().__init__(k, l, m, p)
         
@@ -52,83 +51,70 @@ class SinglePendulumAdaptativeController( controller.DynamicController ):
     def adaptative_variables( self , ddq_d , dq_d , q_d , dq , q ):
         """ 
         
-        Given desired trajectory and actual state
+        Compute intermediate variables
         
         """        
-        q_e   = q  -  q_d
-        dq_e  = dq - dq_d
+        q_e   = q_d  - q
+        dq_e  = dq_d - dq
         
         s      = dq_e  + self.lam * q_e
-        dq_r   = dq_d  - self.lam * q_e
-        ddq_r  = ddq_d - self.lam * dq_e
+        dq_r   = dq_d  + self.lam * q_e
+        ddq_r  = ddq_d + self.lam * dq_e
         
-        return [ s , dq_r , ddq_r ]
+        Y_r = np.zeros(2)
+
+        Y_r[0] = ddq_r
+        Y_r[1] = np.sin(q)
         
-        
-    ############################
-    def adaptative_torque( self , Y , s , q , t ):
-        """ 
-        Given actual state, compute torque necessarly to guarantee convergence
-        """
-        u_computed      = np.dot( Y , self.A  )
-        
-        u_discontinuous = self.Kd*s
-        
-        u_tot = u_computed - u_discontinuous
-        
-        return u_tot
+        return [ s , dq_r , ddq_r , Y_r ]
+    
                         
     ############################
-    def b(self, z, x, q_d, t):
-        
-        [ q , dq ]     = self.model.x2q( x ) 
-        
-        ddq_d          =   np.zeros( self.model.dof )
-        dq_d           =   np.zeros( self.model.dof )
-        
-        [ s , dq_r , ddq_r ]  = self.adaptative_variables( ddq_d , dq_d , 
-                                                           q_d , dq , q )
-        
-        Y = np.zeros(2)
-        dz = np.zeros(2)
+    def b(self, a , x , r , t):
+        """
+        adaptation law
 
-        Y[0]=ddq_r
-        Y[1]=np.sin(q)
-        b = Y * s
-        dz=-1*np.dot( self.T , b )
+        """
         
-        return dz
+        [ q , dq ]                  = self.model.x2q( x ) 
+        
+        [ ddq_d , dq_d , q_d ]      = self.get_traj( t , r )
+        
+        [ s , dq_r , ddq_r , Y_r ]  = self.adaptative_variables( ddq_d , dq_d , q_d , dq , q )
+
+        da   = self.P @ Y_r * s
+        
+        return da
+    
     
     ############################
-    def c(self , z , x , q_d , t = 0):
+    def c(self , a , x , r , t = 0):
         """ 
         
-        Given desired fixed goal state and actual state, compute torques
+        control law
         
         """
-        [ q , dq ]     = self.model.x2q( x ) 
+        [ q , dq ]                  = self.model.x2q( x ) 
         
-        ddq_d          =   np.zeros( self.model.dof )
-        dq_d           =   np.zeros( self.model.dof )
+        [ ddq_d , dq_d , q_d ]      = self.get_traj( t , r )
         
-        [ s , dq_r , ddq_r ]  = self.adaptative_variables( ddq_d , dq_d , 
-                                                           q_d , dq , q )
-
-        Y = np.zeros(2)
-        Y[0]=ddq_r
-        Y[1]=np.sin(q)
-        
-        self.A = self.get_z_integral(z)
+        [ s , dq_r , ddq_r , Y_r ]  = self.adaptative_variables( ddq_d , dq_d , q_d , dq , q )
                 
-        u                     = self.adaptative_torque( Y , s  , q , t )
+        u   = Y_r @ a + self.K * s
         
         return u
     
+    
     ############################
-    def get_z_integral(self, z):
-        """ get intergral error internal states """
+    def get_traj(self, t , r ):
+        """  """
         
-        return z[:self.l]
+        ddq_d          =   np.zeros( self.model.dof )
+        dq_d           =   np.zeros( self.model.dof )
+        q_d            =   r
+        
+        return [ ddq_d , dq_d , q_d ] 
+    
 
 ##############################################################################
         
