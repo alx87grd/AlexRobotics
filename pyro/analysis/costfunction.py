@@ -37,13 +37,13 @@ class CostFunction():
     ###########################################################################
 
     #############################
-    def h(self, x, t = 0):
+    def h(self, x, t ):
         """ Final cost function """
 
         raise NotImplementedError
 
     #############################
-    def g(self, x, u, t):
+    def g(self, x, u, t ):
         """ step cost function """
 
         raise NotImplementedError
@@ -111,7 +111,7 @@ class QuadraticCostFunction( CostFunction ):
     J = int( g(x,u,t) * dt ) + h( x(T) , T )
     
     g = xQx + uRu 
-    h = 0
+    h = xSx
     
     """
     
@@ -173,6 +173,7 @@ class QuadraticCostFunction( CostFunction ):
         """ Quadratic additive cost """
         
         """
+        TODO: Add check in init
         # Check dimensions
         if not x.shape[0] == self.Q.shape[0]:
             raise ValueError(
@@ -257,7 +258,8 @@ class TimeCostFunction( CostFunction ):
                 
         return dJ
     
-    
+
+
 ##############################################################################
 class QuadraticCostFunctionWithDomainCheck( CostFunction ):
     """ 
@@ -380,11 +382,11 @@ class Reachability( CostFunction ):
         
         if self.isontarget( x , t ):
             
-            J_f = 0 # Finish in the target set is very good
+            J_f = 0 # Finishing in the target set is very good
             
         else:
             
-            J_f = self.INF # Finish not in the target set is very bad
+            J_f = self.INF # Finishing not in the target set is very bad
         
         return J_f
     

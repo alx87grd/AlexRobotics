@@ -127,7 +127,7 @@ class DynamicProgramming:
         self.tf  = final_time
         
         # Options
-        self.alpha                = 1.0 # facteur d'oubli exponentiel
+        self.alpha                = 1.0     # exponential forgetting factor
         self.interpol_method      ='linear' # "linear”, “nearest”, “slinear”, “cubic”, and “quintic”
         self.save_time_history    = True
         
@@ -253,8 +253,8 @@ class DynamicProgramming:
         
         # List in memory
         if self.save_time_history:
-            self.J_list.append( self.J  )
-            self.t_list.append( self.t )
+            self.J_list.append(  self.J  )
+            self.t_list.append(  self.t  )
             self.pi_list.append( self.pi )
             
         # return largest J change for usage as stoping criteria
@@ -269,14 +269,14 @@ class DynamicProgramming:
         print('-----------------------------------------')
         
         if animate_cost2go: self.plot_cost2go()
-        if animate_policy: self.plot_policy( k )
+        if animate_policy:  self.plot_policy( k )
                
         for i in range(n):
             self.initialize_backward_step()
             self.compute_backward_step()
             self.finalize_backward_step()
             if animate_cost2go: self.update_cost2go_plot()
-            if animate_policy: self.update_policy_plot( k )
+            if animate_policy:  self.update_policy_plot( k )
             
     
     ################################
@@ -307,7 +307,7 @@ class DynamicProgramming:
             if animate_cost2go: self.update_cost2go_plot()
             if animate_policy: self.update_policy_plot( k )
             
-        print('Bellman equation solved!' )
+        print('\nBellman equation solved!' )
         
         
     ################################

@@ -527,6 +527,7 @@ class GridDynamicSystem:
         """
         return J.reshape( self.x_grid_dim )
     
+    
     ##############################
     def compute_interpolation_function(self, J , method='linear' , bounds_error = True , fill_value = None ):
         """  
