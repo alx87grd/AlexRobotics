@@ -14,7 +14,7 @@ from pyro.control import nonlinear
 sys = pendulum.DoublePendulum()
 ctl  = nonlinear.SlidingModeController( sys )
 
-ctl.lam  = 2
+ctl.lam  = 1
 ctl.gain = 5
 ctl.rbar = np.array([0,0])
 

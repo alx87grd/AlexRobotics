@@ -15,7 +15,7 @@ sys = pendulum.DoublePendulum()
 ctl  = nonlinear.ComputedTorqueController( sys )
 
 ctl.w0   = 1.5
-ctl.zeta = 0.8 
+ctl.zeta = 0.5
 ctl.rbar = np.array([0,0])
 
 # New cl-dynamic
