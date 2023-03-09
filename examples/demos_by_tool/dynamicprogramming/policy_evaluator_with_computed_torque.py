@@ -10,9 +10,9 @@ import numpy as np
 
 from pyro.dynamic  import pendulum
 from pyro.control  import nonlinear
-import dynamic_programming as dprog
-import discretizer
-import costfunction
+from pyro.analysis import costfunction
+from pyro.planning import dynamicprogramming 
+from pyro.planning import discretizer
 
 sys  = pendulum.SinglePendulum()
 
@@ -40,6 +40,6 @@ sys.u_lb[0] = -200
 # Evaluate on a grid
 grid_sys = discretizer.GridDynamicSystem( sys , [301,301] , [11] , 0.05 , False )
 
-evaluator = dprog.PolicyEvaluatorWithLookUpTable(ctl, grid_sys, qcf)
+evaluator = dynamicprogramming.PolicyEvaluatorWithLookUpTable(ctl, grid_sys, qcf)
 evaluator.solve_bellman_equation()
 evaluator.plot_cost2go()

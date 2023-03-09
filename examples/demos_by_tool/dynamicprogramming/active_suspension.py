@@ -9,10 +9,9 @@ Created on Sun Oct 16 22:27:47 2022
 import numpy as np
 
 from pyro.dynamic  import suspension
-
-import dynamic_programming as dprog
-import discretizer
-import costfunction
+from pyro.analysis import costfunction
+from pyro.planning import dynamicprogramming 
+from pyro.planning import discretizer
 
 sys  = suspension.QuarterCarOnRoughTerrain()
 
@@ -49,7 +48,7 @@ qcf.S[1,1] = 0.0
 qcf.S[2,2] = 0.0
 
 # DP algo
-dp = dprog.DynamicProgrammingWithLookUpTable( grid_sys, qcf)
+dp = dynamicprogramming.DynamicProgrammingWithLookUpTable( grid_sys, qcf)
 
 dp.alpha = 0.99
 dp.solve_bellman_equation()

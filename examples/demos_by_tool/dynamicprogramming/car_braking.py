@@ -9,12 +9,9 @@ Created on Sun Oct 16 22:27:47 2022
 import numpy as np
 
 from pyro.dynamic  import longitudinal_vehicule
-
-
-from pyro.control  import controller
-import dynamic_programming as dprog
-import discretizer
-import costfunction
+from pyro.analysis import costfunction
+from pyro.planning import dynamicprogramming 
+from pyro.planning import discretizer
 
 sys  = longitudinal_vehicule.LongitudinalFrontWheelDriveCarWithWheelSlipInput()
 
@@ -32,29 +29,19 @@ qcf.Q[0,0] = 0.1
 qcf.Q[1,1] = 0.1
 qcf.INF  = 1000000
 
-
 # DP algo
-#dp = dprog.DynamicProgramming( grid_sys, qcf )
-dp = dprog.DynamicProgrammingWithLookUpTable( grid_sys, qcf)
+dp = dynamicprogramming.DynamicProgrammingWithLookUpTable( grid_sys, qcf)
+
+dp.solve_bellman_equation( tol = 0.5 , animate_cost2go = True )
 
 
-dp.compute_steps(300)
-dp.plot_cost2go()
-
-
-grid_sys.plot_grid_value( dp.J_next )
-
-ctl = dprog.LookUpTableController( grid_sys , dp.pi )
+ctl = dp.get_lookup_table_controller()
 
 ctl.plot_control_law( sys = sys , n = 100)
 
 
-#asign controller
-cl_sys = controller.ClosedLoopSystem( sys , ctl )
-
-##############################################################################
-
 # Simulation and animation
+cl_sys = ctl + sys
 cl_sys.x0   = np.array([0,0])
 cl_sys.compute_trajectory( 10, 10001, 'euler')
 cl_sys.plot_trajectory('xu')
