@@ -8,17 +8,10 @@ Created on Sun Oct 16 22:27:47 2022
 
 import numpy as np
 
-from pyro.dynamic  import longitudinal_vehicule
 from pyro.dynamic  import vehicle
-
-sys  = vehicle.HolonomicMobileRobotwithObstacles()
-
-
-
-from pyro.control  import controller
-import dynamic_programming as dprog
-import discretizer
-import costfunction
+from pyro.analysis import costfunction
+from pyro.planning import dynamicprogramming 
+from pyro.planning import discretizer
 
 sys  = vehicle.HolonomicMobileRobotwithObstacles()
 
@@ -40,32 +33,29 @@ qcf.R[0,0] = 0.0
 qcf.R[1,1] = 0.0
 qcf.S[0,0] = 10.0
 qcf.S[1,1] = 10.0
-qcf.INF  = 8000
+qcf.INF    = 8000
 
 # DP algo
 #dp = dprog.DynamicProgramming( grid_sys, qcf )
-dp = dprog.DynamicProgrammingWithLookUpTable( grid_sys, qcf)
-dp.plot_cost2go()
+dp = dynamicprogramming.DynamicProgrammingWithLookUpTable( grid_sys, qcf)
 
-
-dp.solve_bellman_equation( tol = 0.01 )
-dp.plot_cost2go()
-
+#dp.plot_cost2go()
+#dp.solve_bellman_equation( tol = 0.01 )
+#dp.solve_bellman_equation( tol = 0.01 , animate_cost2go = True )
+dp.solve_bellman_equation( tol = 0.01 , animate_policy = True )
 
 #grid_sys.plot_grid_value( dp.J_next )
 
-ctl = dprog.LookUpTableController( grid_sys , dp.pi )
+ctl = dp.get_lookup_table_controller()
 
 #ctl.plot_control_law( k=0 , sys = sys , n = 50)
 #ctl.plot_control_law( k=1 , sys = sys , n = 50)
 
 
-#asign controller
-cl_sys = controller.ClosedLoopSystem( sys , ctl )
-
 ##############################################################################
 
 # Simulation and animation
+cl_sys      = ctl + sys
 cl_sys.x0   = np.array([-8,5])
 cl_sys.compute_trajectory( 60, 10001, 'euler')
 cl_sys.plot_trajectory('xu')

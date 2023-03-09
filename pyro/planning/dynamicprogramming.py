@@ -295,6 +295,8 @@ class DynamicProgramming:
         print('\nComputing backward DP iterations until dJ<%2.2f:'%tol)
         print('---------------------------------------------------------')
         
+        #self.plot_cost2go()
+        #self.plot_policy( k )
         if animate_cost2go: self.plot_cost2go()
         if animate_policy: self.plot_policy( k )
         
@@ -304,6 +306,8 @@ class DynamicProgramming:
             self.initialize_backward_step()
             self.compute_backward_step()
             delta = self.finalize_backward_step()
+            #self.update_cost2go_plot()
+            #self.update_policy_plot( k )
             if animate_cost2go: self.update_cost2go_plot()
             if animate_policy: self.update_policy_plot( k )
             
@@ -346,8 +350,8 @@ class DynamicProgramming:
         
         self.cost2go_fig = [fig, ax, pcm, text, i , j ]
         
+        plt.ion()
         if show: plt.pause( 0.001 )
-        #plt.ion()
         
         
     ################################
@@ -372,8 +376,8 @@ class DynamicProgramming:
         
         self.policy_fig = [fig, ax, pcm, text, k , i , j ]
         
+        plt.ion()
         if show: plt.pause( 0.001 )
-        #plt.ion()
         
         
     ################################
@@ -396,6 +400,7 @@ class DynamicProgramming:
         self.pi = self.pi_list[0]
         self.t  = self.t_list[0]
         self.clean_infeasible_set()
+        
         self.plot_cost2go( jmax = jmax , i = i , j = j , show = False  )
 
         self.ani = animation.FuncAnimation( self.cost2go_fig[0], self.__animate_cost2go, 

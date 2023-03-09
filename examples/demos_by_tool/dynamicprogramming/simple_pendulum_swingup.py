@@ -9,10 +9,9 @@ Created on Sun Oct 16 22:27:47 2022
 import numpy as np
 
 from pyro.dynamic  import pendulum
-from pyro.control  import controller
-import dynamic_programming as dprog
-import discretizer
-import costfunction
+from pyro.analysis import costfunction
+from pyro.planning import dynamicprogramming 
+from pyro.planning import discretizer
 
 sys  = pendulum.SinglePendulum()
 
@@ -20,7 +19,7 @@ sys.x_ub = np.array([+6, +6])
 sys.x_lb = np.array([-9,  -6])
 
 # Discrete world 
-grid_sys = discretizer.GridDynamicSystem( sys , [201,201] , [11] )
+grid_sys = discretizer.GridDynamicSystem( sys , [101,101] , [11] )
 
 # Cost Function
 qcf = costfunction.QuadraticCostFunction.from_sys(sys)
@@ -33,7 +32,7 @@ qcf.S[1,1] = 10.0
 
 
 # DP algo
-dp = dprog.DynamicProgrammingWithLookUpTable( grid_sys, qcf)
+dp = dynamicprogramming .DynamicProgrammingWithLookUpTable( grid_sys, qcf)
 #dp = dprog.DynamicProgramming2DRectBivariateSpline(grid_sys, qcf)
 
 #dp.solve_bellman_equation( animate_cost2go = True )
@@ -41,8 +40,8 @@ dp = dprog.DynamicProgrammingWithLookUpTable( grid_sys, qcf)
 #dp.compute_steps(200)
 # dp.plot_policy()
 
-#dp.solve_bellman_equation( tol = 1 , animate_cost2go = True )
-dp.solve_bellman_equation( tol = 1 , animate_policy = True )
+dp.solve_bellman_equation( tol = 1 , animate_cost2go = True )
+#dp.solve_bellman_equation( tol = 1 , animate_policy = True )
 #dp.plot_cost2go(150)
 
 #dp.animate_cost2go( show = False , save = True )
@@ -55,7 +54,7 @@ ctl = dp.get_lookup_table_controller()
 
 
 #asign controller
-cl_sys = controller.ClosedLoopSystem( sys , ctl )
+cl_sys = ctl + sys
 cl_sys.x0   = np.array([0,0])
 cl_sys.compute_trajectory( 10, 10001, 'euler')
 cl_sys.plot_trajectory('xu')
