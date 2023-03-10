@@ -35,7 +35,7 @@ from pyro.analysis import costfunction
 
 cf = costfunction.QuadraticCostFunction.from_sys( sys ) 
 
-cf.INF  = 10000     # The value iteration algo needs this parameter
+cf.INF  = 300    # The value iteration algo needs this parameter
 
 cf.Q[0,0] = 1
 cf.Q[1,1] = 0.1
@@ -93,18 +93,16 @@ print('Trajectory cost: ', sys_with_lqr.traj.J[-1])
 # VI
 ##############################################################################
 
-from pyro.planning import valueiteration
+from pyro.planning import dynamicprogramming 
 from pyro.planning import discretizer
 
-# Value iteration algo
-vi = valueiteration.ValueIteration_2D( discretizer.GridDynamicSystem( sys ) , cf )
+grid_sys = discretizer.GridDynamicSystem( sys , [101,101] , [11] )
 
-vi.initialize()
-#vi.compute_steps(200,True). # To compute from sratch instead of loading the solution
-vi.load_data('simple_pendulum_vi') # /content/pyro/examples/demo/
-vi.assign_interpol_controller()
+dp = dynamicprogramming.DynamicProgrammingWithLookUpTable( grid_sys, cf)
 
-vi_ctl = vi.ctl
+dp.solve_bellman_equation()
+
+vi_ctl = dp.get_lookup_table_controller()
 
 vi_ctl.plot_control_law( sys = sys , n=1000)
 

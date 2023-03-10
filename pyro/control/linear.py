@@ -125,7 +125,7 @@ class ProportionalController(controller.StaticController):
         controller.StaticController.__init__( self, p, m, p)
         
         self.rbar = np.zeros((self.k,))
-        self.name = "%d X %d Proportional Contrller" % self.K.shape
+        self.name = "%d X %d Proportional Controller" % self.K.shape
         
         self.ybar = np.zeros((self.p,))  # feedback offset
         self.ubar = np.zeros((self.m,))  # control input offset

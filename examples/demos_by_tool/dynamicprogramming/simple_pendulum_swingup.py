@@ -32,7 +32,7 @@ qcf.S[1,1] = 10.0
 
 
 # DP algo
-dp = dynamicprogramming .DynamicProgrammingWithLookUpTable( grid_sys, qcf)
+dp = dynamicprogramming.DynamicProgrammingWithLookUpTable( grid_sys, qcf)
 #dp = dprog.DynamicProgramming2DRectBivariateSpline(grid_sys, qcf)
 
 #dp.solve_bellman_equation( animate_cost2go = True )

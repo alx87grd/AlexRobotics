@@ -129,8 +129,8 @@ class StaticController():
         u  : control inputs vector    m x 1
         
         """
-        
-        u = self.c( y , self.rbar , t )
+        r = self.t2r( t )
+        u = self.c( y , r , t )
         
         return u
     
