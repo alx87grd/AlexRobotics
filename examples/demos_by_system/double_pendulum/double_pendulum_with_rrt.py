@@ -33,7 +33,7 @@ planner.u_options = [
         np.array([-t, 0])
         ]
 
-planner.goal_radius = 0.8
+planner.goal_radius = 1.5
 
 planner.find_path_to_goal( x_goal )
 

@@ -14,8 +14,8 @@ from pyro.dynamic  import longitudinal_vehicule
 sys  = longitudinal_vehicule.LongitudinalFrontWheelDriveCarWithTorqueInput()
 
 
-sys.x0      = np.array([0,10,30,0])
-sys.ubar[0] = 0
+sys.x0      = np.array([0,0.1,0,0])
+sys.ubar[0] = 2000
 
 
 sys.compute_trajectory(10,10001,'euler')

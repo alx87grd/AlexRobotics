@@ -19,13 +19,15 @@ sys.x_ub = np.array([+6, +6])
 sys.x_lb = np.array([-9,  -6])
 
 # Discrete world 
-grid_sys = discretizer.GridDynamicSystem( sys , [101,101] , [11] )
+grid_sys = discretizer.GridDynamicSystem( sys , [301,301] , [21] )
 
 # Cost Function
 qcf = costfunction.QuadraticCostFunction.from_sys(sys)
 
 qcf.xbar = np.array([ -3.14 , 0 ]) # target
 qcf.INF  = 300
+
+qcf.R[0,0] = 10.0
 
 qcf.S[0,0] = 10.0
 qcf.S[1,1] = 10.0
@@ -40,7 +42,8 @@ dp = dynamicprogramming.DynamicProgrammingWithLookUpTable( grid_sys, qcf)
 #dp.compute_steps(200)
 # dp.plot_policy()
 
-dp.solve_bellman_equation( tol = 1 , animate_cost2go = True )
+dp.solve_bellman_equation( tol = 1)
+#dp.solve_bellman_equation( tol = 1 , animate_cost2go = True )
 #dp.solve_bellman_equation( tol = 1 , animate_policy = True )
 #dp.plot_cost2go(150)
 
@@ -55,7 +58,7 @@ ctl = dp.get_lookup_table_controller()
 
 #asign controller
 cl_sys = ctl + sys
-cl_sys.x0   = np.array([0,0])
+cl_sys.x0   = np.array([-3.14,-5])
 cl_sys.compute_trajectory( 10, 10001, 'euler')
 cl_sys.plot_trajectory('xu')
 cl_sys.plot_phase_plane_trajectory()
