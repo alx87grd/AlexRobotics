@@ -753,12 +753,11 @@ class PolicyEvaluatorWithLookUpTable( PolicyEvaluator ):
 
 if __name__ == "__main__":     
     """ MAIN TEST """
-    
-    import numpy as np
+
 
     from pyro.dynamic  import pendulum
-    import discretizer
-    import costfunction
+    from pyro.planning import discretizer
+    from pyro.analysis import costfunction
 
     sys  = pendulum.SinglePendulum()
 
@@ -769,9 +768,11 @@ if __name__ == "__main__":
     qcf = costfunction.QuadraticCostFunction.from_sys(sys)
 
     qcf.xbar = np.array([ -3.14 , 0 ]) # target
-    qcf.INF  = 10000
+    qcf.INF  = 300
 
     # DP algo
-    dp = DynamicProgramming( grid_sys, qcf )
+    dp = DynamicProgrammingWithLookUpTable(grid_sys, qcf)
+    
+    dp.solve_bellman_equation( tol = 1.0 )
 
     
