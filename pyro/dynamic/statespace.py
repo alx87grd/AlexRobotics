@@ -54,14 +54,14 @@ class StateSpaceSystem(ContinuousDynamicSystem):
             raise ValueError("Number of rows in C does not match D")
     
     #############################################
-    def f(self, x, u, t):
+    def f(self, x, u, t = 0 ):
 
         dx = np.dot(self.A, x) + np.dot(self.B, u)
 
         return dx
     
     #############################################
-    def h(self, x, u, t):
+    def h(self, x, u, t = 0 ):
         
         y = np.dot(self.C, x) + np.dot(self.D, u)
         

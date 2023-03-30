@@ -8,6 +8,8 @@ Created on Wed Jul 12 10:02:12 2017
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator
 
 import time
 
@@ -694,6 +696,94 @@ class GridDynamicSystem:
         fig.show()
         
         return fig, ax, mesh
+    
+    
+    
+    ##############################
+    def plot_grid_value_3D(self, J , J2 = None , name = 'Value on the grid' , x = 0 , y = 1, jmax =  np.inf , jmin = -1 , cmap = 'YlOrRd'):
+        """  
+        plot a scalar value (array by node-id) on a grid
+        
+        Parameters
+        ----------
+        J : n-D numpy array
+        
+        name : string
+               name of the figure
+        
+        x : int 
+            index of J axis to plot as the x-axis on the graph
+            
+        y : int 
+            index of J axis to plot as the y-axis on the graph
+            
+        jmax : float
+               maximum value to clip the J array on the plot
+            
+        jmin : float
+               minimum value to clip the J array on the plot
+        """
+
+        
+        ##################################
+        # Figure init
+        ##################################
+
+        fig = plt.figure(figsize= self.figsize, dpi=self.dpi, frameon=True)
+        fig.canvas.manager.set_window_title( name )
+        ax  = fig.gca(projection='3d')
+
+        xname = self.sys.state_label[x] + ' ' + self.sys.state_units[x]
+        yname = self.sys.state_label[y] + ' ' + self.sys.state_units[y]
+        
+        ax.set_ylabel(yname, fontsize=self.fontsize)
+        ax.set_xlabel(xname, fontsize=self.fontsize)
+        ax.set_zlabel('J')
+        
+        x_level = self.x_level[ x ]
+        y_level = self.x_level[ y ]
+        
+        X, Y = np.meshgrid( x_level ,  y_level )
+        
+        ##################################
+        ### Create grid of data and plot
+        #################################
+        
+        #J_grid_nd = np.clip( self.get_grid_from_array( J ) , jmin , jmax )
+        J_grid_nd = self.get_grid_from_array( J ) 
+        
+        J_grid_2d = self.get_2D_slice_of_grid( J_grid_nd , x , y )
+        
+        surf = ax.plot_surface( X , Y , J_grid_2d.T , cmap = cmap, linewidth=1.0, antialiased=False) #, norm = colors.LogNorm()
+
+        #mesh.set_clim(vmin=jmin, vmax=jmax)
+        
+        # Option to compare to J2
+        if J2 is None:
+            pass
+        
+        else:
+            J2_grid_nd = self.get_grid_from_array( J2 ) 
+            J2_grid_2d = self.get_2D_slice_of_grid( J2_grid_nd , x , y )
+            wire = ax.plot_wireframe( X , Y , J2_grid_2d.T ) 
+        
+        
+        ax.set_zlim( jmin, np.min( [ J.max() , jmax ] ) )
+        ax.zaxis.set_major_locator(LinearLocator(10))
+        ax.zaxis.set_major_formatter('{x:2.02f}')
+        
+        ##################################
+        # Figure param
+        ##################################
+        
+        ax.tick_params( labelsize = self.fontsize )
+        ax.grid(True)
+        
+        fig.colorbar( surf )
+        #fig.tight_layout()
+        fig.show()
+        
+        return fig, ax, surf
                 
         
     ##############################
@@ -718,6 +808,11 @@ class GridDynamicSystem:
 
 if __name__ == "__main__":     
     """ MAIN TEST """
+    
+    
+    
+    
+    
 
     from pyro.dynamic  import pendulum
 

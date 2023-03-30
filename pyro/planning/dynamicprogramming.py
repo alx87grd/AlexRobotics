@@ -453,6 +453,18 @@ class DynamicProgramming:
         
     
     ################################
+    def plot_cost2go_3D(self , jmax = None , i = 0 , j = 1 , show = True ):
+        
+        if jmax == None: jmax = self.cf.INF
+               
+        fig, ax, surf = self.grid_sys.plot_grid_value_3D( self.J , None , 'Cost-to-go' , i , j , jmax , 0)
+        
+        text = ax.text(0.05, 0.05, 0.05, '', transform=ax.transAxes, fontsize = 8 )
+        
+        self.cost2go_3D_fig = [fig, ax, surf, text, i , j ]
+        
+    
+    ################################
     ### Quick utility shorcuts
     ################################
     
@@ -774,5 +786,9 @@ if __name__ == "__main__":
     dp = DynamicProgrammingWithLookUpTable(grid_sys, qcf)
     
     dp.solve_bellman_equation( tol = 1.0 )
+    
+    dp.plot_cost2go()
+    dp.plot_cost2go_3D()
+    dp.plot_policy()
 
     

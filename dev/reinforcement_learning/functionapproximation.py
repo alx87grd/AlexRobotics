@@ -24,14 +24,14 @@ class FunctionApproximator():
     
     ############################
     def J_hat( self , x , w ):
-        """ return approx at a state x for given param w """
+        """ Compute J approx given state x and param w """
         
         return 0
     
     
     ############################
     def dJ_dw( self , x ):
-        """ return approx a state x """
+        """ Compute dJ/dw given state x """
         
         return np.zeros( self.n )
     
@@ -50,68 +50,100 @@ class LinearFunctionApproximator( FunctionApproximator ):
     
     ############################
     def J_hat( self , x , w ):
-        """ return approx a state x """
+        """ Compute J approx given state x and param w """
         
-        J_hat = w.T @ self.compute_kernel( x )
+        phi   = self.compute_kernel( x )
+        
+        J_hat = phi.T @ w
         
         return J_hat
     
     
     ############################
     def dJ_dw( self , x ):
-        """ return approx a state x """
+        """ Compute dJ/dw given state x """
         
-        return self.compute_kernel()
-    
-    
-    ############################
-    def kernel( self , x , i ):
+        phi   = self.compute_kernel( x )
         
-        # placer holder
-        
-        return 0
+        return phi
     
     
     ############################
     def compute_kernel( self , x ):
-        """ return approx a state x """
+        """ Compute kernel functions phi given a state x """
         
         phi = np.zeros( self.n )
-        
-        for i in range(self.n):
-            
-            phi[i] = self.kernel( x, i )
             
         return phi
     
     
     ############################
-    def least_square_fit( self , Js , Xs ):
-        """ solve J_d = P w """
+    def compute_all_kernel( self , Xs ):
+        """ Compute all kernel functions phi given a m state x """
         
-        n = Js.shape[0]
+        m = Xs.shape[0]   # number of data point
+        n = self.n        # number of params
         
-        P = np.zeros((n,self.n,))
+        P = np.zeros( ( m , n ))
         
-        for i in range(n):
+        for i in range(m):
             
             P[i,:] = self.compute_kernel( Xs[i,:] )
             
-        w = np.linalg.lstsq( P , Js , rcond=None)[0]
-        
-        # DEV
-        self.P = P
-            
-        return w
+        return P.T
     
     
     ############################
-    def test_Jhat( self , w ):
+    def least_square_fit( self , Js , P ):
         """ solve J_d = P w """
-        
-        J_hat = self.P @ w
+
+        #P = self.compute_all_kernel( Xs )
             
-        return J_hat
+        w = np.linalg.lstsq( P.T , Js , rcond=None)[0]
+        
+        J_hat = P.T @ w
+            
+        return w , J_hat
+    
+    #############################
+    def __add__(self, other ):
+        """ 
+        return new function approx with all kernels
+        """
+        
+        return CombinedLinearFunctionApproximator( self , other )
+    
+    
+    
+###############################################################################
+### Combined Linear Function approximator
+###############################################################################
+    
+class CombinedLinearFunctionApproximator( LinearFunctionApproximator ):
+
+    ############################
+    def __init__(self, FA1 , FA2 ):
+        
+        FunctionApproximator.__init__(self, FA1.n + FA2.n )
+        
+        self.FA1 = FA1
+        self.FA2 = FA2
+        
+        
+    
+    ############################
+    def compute_kernel( self , x ):
+        """ Compute kernel functions phi given a state x """
+        
+        phi1 = self.FA1.compute_kernel( x )
+        phi2 = self.FA2.compute_kernel( x )
+        
+        phi = np.concatenate(( phi1, phi2 ))
+            
+        return phi
+        
+        
+    
     
 
 
@@ -154,6 +186,8 @@ class QuadraticFunctionApproximator( LinearFunctionApproximator ):
         
         phi = np.zeros( self.n )
         
+        x = x - self.x0
+        
         xxT = np.outer( x , x )
         
         #indices
@@ -168,6 +202,39 @@ class QuadraticFunctionApproximator( LinearFunctionApproximator ):
         phi[n2:n3] = xxT[np.triu_indices( self.sys_n, k = 1)]
             
         return phi
+    
+    
+###############################################################################
+### Radial basis function Function approximator
+###############################################################################
+    
+class GaussianFunctionApproximator( LinearFunctionApproximator ):
+
+    ############################
+    def __init__(self, x0 , sig = 20.0 ):
+        """
+        J_hat = exp( - || x - x0 || / 2 sig^2 )
+
+        """
+        
+        self.x0    = x0
+        self.sys_n = x0.shape[0]
+        self.n     = 1
+        self.a     = -0.5  / (sig**2)
+    
+    
+    ############################
+    def compute_kernel( self , x ):
+        """ return approx a state x """
+        
+        phi = np.array([0.])
+        
+        e = x - self.x0
+        r = e.T @ e
+        
+        phi[0] = np.exp( self.a * r )
+            
+        return phi
 
 
 
@@ -180,11 +247,13 @@ if __name__ == "__main__":
     """ MAIN TEST """
     
     from pyro.dynamic  import pendulum
+    from pyro.dynamic  import massspringdamper
     from pyro.planning import discretizer
     from pyro.analysis import costfunction
     from pyro.planning import dynamicprogramming 
 
     sys  = pendulum.SinglePendulum()
+    #sys  = 
 
     # Discrete world 
     grid_sys = discretizer.GridDynamicSystem( sys , [101,101] , [3] )
@@ -193,26 +262,26 @@ if __name__ == "__main__":
     qcf = costfunction.QuadraticCostFunction.from_sys(sys)
 
     qcf.xbar = np.array([ -3.14 , 0 ]) # target
-    qcf.INF  = 300
+    qcf.INF  = 200
 
     # DP algo
     dp = dynamicprogramming.DynamicProgrammingWithLookUpTable(grid_sys, qcf)
     
     dp.solve_bellman_equation( tol = 1.0 )
-
+    dp.plot_cost2go_3D()
     
+    
+    # Approx
     qfa = QuadraticFunctionApproximator( sys.n , x0 = qcf.xbar )
     
+    Xs = grid_sys.state_from_node_id # All state on the grid
     
-    w = qfa.least_square_fit( dp.J , grid_sys.state_from_node_id )
+    P = qfa.compute_all_kernel( Xs )
     
-    dp.plot_cost2go()
+    w , J_hat = qfa.least_square_fit( dp.J , P )
     
-    J_hat = qfa.test_Jhat( w )
-    
-    dp.J = J_hat
-    
-    dp.plot_cost2go()
+    grid_sys.plot_grid_value_3D(  J_hat , None , ' J_hat')
+    grid_sys.plot_grid_value_3D( dp.J , J_hat , 'J vs. J_hat')
     
             
             
