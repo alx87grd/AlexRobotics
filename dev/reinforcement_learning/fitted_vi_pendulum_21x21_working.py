@@ -17,7 +17,7 @@ from functionapproximation import MultipleGaussianFunctionApproximator
 sys  = pendulum.SinglePendulum()
 
 # Discrete world 
-grid_sys = discretizer.GridDynamicSystem( sys , [101,101] , [3] , 0.1 )
+grid_sys = discretizer.GridDynamicSystem( sys , [101,101] , [3] )
 
 # Cost Function
 qcf = costfunction.QuadraticCostFunction.from_sys(sys)
@@ -30,18 +30,18 @@ qcf.INF  = 300
 fa = QuadraticFunctionApproximator( sys.n , x0 = qcf.xbar )
 
 # Discrete world 
-grid_sys_gaussian = discretizer.GridDynamicSystem( sys , [41,41] , [3] , 0.05)
+grid_sys_gaussian = discretizer.GridDynamicSystem( sys , [21,21] , [3] , 0.05)
 X0 = grid_sys_gaussian.state_from_node_id
 
 #fa = MultipleGaussianFunctionApproximator( X0 , 3.0 ) + fa
 
-fa = MultipleGaussianFunctionApproximator( X0 , 0.30 )
+fa = MultipleGaussianFunctionApproximator( X0 , 0.5 )
 
 # DP algo
 dp = LinearApproximateDynamicProgramming( grid_sys, qcf, fa )
 
 dp.alpha = 0.95
-dp.gamma = 1.0
+dp.gamma = 0.2
 
 dp.w = dp.w + 20
 
