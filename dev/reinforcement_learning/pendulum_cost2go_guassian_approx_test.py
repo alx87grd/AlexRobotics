@@ -76,7 +76,7 @@ dp.plot_cost2go_3D()
 
 
 # Discrete world 
-grid_sys_gaussian = discretizer.GridDynamicSystem( sys , [21,21] , [3] , 0.05)
+grid_sys_gaussian = discretizer.GridDynamicSystem( sys , [3,3] , [3] , 0.05)
 X0 = grid_sys_gaussian.state_from_node_id
 
 qfa = MultipleGaussianFunctionApproximator( X0  )

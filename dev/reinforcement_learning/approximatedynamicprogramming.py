@@ -40,7 +40,7 @@ class LinearApproximateDynamicProgramming( dynamicprogramming.DynamicProgramming
         
         # Options
         self.alpha                = 0.9    # exponential forgetting factor
-        #self.gamma                = 0.2
+        self.gamma                = 0.2
         self.save_time_history    = True
         
         # Memory Variables
@@ -68,7 +68,7 @@ class LinearApproximateDynamicProgramming( dynamicprogramming.DynamicProgramming
             # Value at t = t_f
             self.J_list.append(  self.J  )
             self.w_list.append(  self.w )
-            self.w_list.append(  self.k )
+            self.t_list.append(  self.k )
         
         
     ###############################
@@ -88,7 +88,7 @@ class LinearApproximateDynamicProgramming( dynamicprogramming.DynamicProgramming
         
         
         #### Test
-        eps   = 0.5 #self.cf.EPS
+        eps   = 0.4 #self.cf.EPS
         xbar  = self.cf.xbar
         
         on_target = np.full( self.grid_sys.x_next_table[:,:,0].shape , True )
@@ -98,6 +98,8 @@ class LinearApproximateDynamicProgramming( dynamicprogramming.DynamicProgramming
             on_target = np.logical_and( on_target , (self.grid_sys.x_next_table[:,:,i] - xbar[i])**2 < eps )
             
         self.on_target = on_target
+        
+        #self.off_target = 
         #### 
         
     
@@ -118,7 +120,8 @@ class LinearApproximateDynamicProgramming( dynamicprogramming.DynamicProgramming
         
         Q      = self.G + self.alpha * J_next.reshape( ( self.grid_sys.nodes_n , self.grid_sys.actions_n ) )
         
-        Q[ self.on_target ] = 0. # Test
+        Q[ self.on_target  ] = 0.            # Test
+        Q[ Q > self.cf.INF ] = self.cf.INF   # Test
                         
         J_d    = Q.min( axis = 1 ) # New J Samples
         
@@ -127,8 +130,12 @@ class LinearApproximateDynamicProgramming( dynamicprogramming.DynamicProgramming
         #e      = self.J - J_d
         #dJ_dw  = self.fa.dJ_dw()
         
-        self.J = J_hat
-        self.w = w
+        
+        
+        #self.J = J_hat
+        #self.w = w 
+        self.w = self.w + self.gamma * ( w - self.w )
+        self.J = self.P.T @ self.w
                     
     
     ###############################
@@ -201,20 +208,27 @@ if __name__ == "__main__":
     fa = QuadraticFunctionApproximator( sys.n , x0 = qcf.xbar )
     
     # Discrete world 
-    grid_sys_gaussian = discretizer.GridDynamicSystem( sys , [21,21] , [3] , 0.05)
+    grid_sys_gaussian = discretizer.GridDynamicSystem( sys , [11,11] , [3] , 0.05)
     X0 = grid_sys_gaussian.state_from_node_id
 
-    fa = MultipleGaussianFunctionApproximator( X0  )
+    #fa = MultipleGaussianFunctionApproximator( X0 , 3.0 ) + fa
+    
+    fa = MultipleGaussianFunctionApproximator( X0 , 1.0 )
 
     # DP algo
     dp = LinearApproximateDynamicProgramming( grid_sys, qcf, fa )
     
+    dp.alpha = 0.8
+    dp.gamma = 1.0
+    
     dp.w = dp.w + 20
     
-    dp.solve_bellman_equation( tol = 0.1 )
+    #dp.solve_bellman_equation( tol = 0.1 )
+    dp.compute_steps(100)
     
-    dp.plot_cost2go()
+    #dp.plot_cost2go()
     #dp.plot_cost2go_3D()
+    dp.animate_cost2go()
         
         
     
