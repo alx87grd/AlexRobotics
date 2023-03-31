@@ -16,21 +16,22 @@ from pyro.planning import dynamicprogramming
 
 from scipy.linalg  import solve_continuous_are
 
-from functionapproximation import QuadraticFunctionApproximator
 from functionapproximation import GaussianFunctionApproximator
 from functionapproximation import MultipleGaussianFunctionApproximator
 
 sys  = pendulum.SinglePendulum()
 
-sys.x_ub[0] =  10.0
-sys.x_lb[0] = -10.0
-sys.x_lb[1] = -5.0
-sys.x_ub[1] = 5.0
-sys.u_ub[0] = 5.0
-sys.u_lb[0] = -5.0
+# =============================================================================
+# sys.x_ub[0] =  10.0
+# sys.x_lb[0] = -10.0
+# sys.x_lb[1] = -5.0
+# sys.x_ub[1] = 5.0
+# sys.u_ub[0] = 5.0
+# sys.u_lb[0] = -5.0
+# =============================================================================
 
 # Discrete world 
-grid_sys = discretizer.GridDynamicSystem( sys , [201,201] , [11] , 0.05)
+grid_sys = discretizer.GridDynamicSystem( sys , [101,101] , [3] , 0.05)
 
 # Cost Function
 qcf = costfunction.QuadraticCostFunction.from_sys(sys)
@@ -78,7 +79,7 @@ dp.plot_cost2go_3D()
 grid_sys_gaussian = discretizer.GridDynamicSystem( sys , [21,21] , [3] , 0.05)
 X0 = grid_sys_gaussian.state_from_node_id
 
-qfa = MultipleGaussianFunctionApproximator( X0  ) + QuadraticFunctionApproximator( sys.n )
+qfa = MultipleGaussianFunctionApproximator( X0  )
 
 Xs = grid_sys.state_from_node_id # All state on the grid
 

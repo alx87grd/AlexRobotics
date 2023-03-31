@@ -211,7 +211,7 @@ class QuadraticFunctionApproximator( LinearFunctionApproximator ):
 class GaussianFunctionApproximator( LinearFunctionApproximator ):
 
     ############################
-    def __init__(self, x0 , sig = 20.0 ):
+    def __init__(self, x0 , sig = 6.0 ):
         """
         J_hat = exp( - || x - x0 || / 2 sig^2 )
 
@@ -233,6 +233,38 @@ class GaussianFunctionApproximator( LinearFunctionApproximator ):
         r = e.T @ e
         
         phi[0] = np.exp( self.a * r )
+            
+        return phi
+    
+    
+###############################################################################
+class MultipleGaussianFunctionApproximator( LinearFunctionApproximator ):
+
+    ############################
+    def __init__(self, Xs , sig = 1.0 ):
+        """
+        J_hat = sum exp( - || x - x0 || / 2 sig^2 )
+
+        """
+        
+        self.Xs    = Xs
+        self.sys_n = Xs.shape[1]
+        self.n     = Xs.shape[0]   # number of data point
+        self.a     = -0.5  / (sig**2)
+    
+    
+    ############################
+    def compute_kernel( self , x ):
+        """ return approx a state x """
+        
+        phi = np.zeros(self.n)
+        
+        for i in range(self.n):
+            
+            e = x - self.Xs[i,:] 
+            r = e.T @ e
+            
+            phi[i] = np.exp( self.a * r )
             
         return phi
 
@@ -271,8 +303,24 @@ if __name__ == "__main__":
     dp.plot_cost2go_3D()
     
     
+    
     # Approx
-    qfa = QuadraticFunctionApproximator( sys.n , x0 = qcf.xbar )
+    qfa0 = QuadraticFunctionApproximator( sys.n , x0 = qcf.xbar )
+    
+    sig = 2.0
+    
+    qfa1 = GaussianFunctionApproximator( x0 = np.array([0,0]), sig = sig )
+    qfa2 = GaussianFunctionApproximator(  x0 = qcf.xbar , sig = sig)
+    qfa3 = GaussianFunctionApproximator(  x0 = qcf.xbar + np.array([1,0]) , sig = sig)
+    qfa4 = GaussianFunctionApproximator(  x0 = qcf.xbar + np.array([1,1]) , sig = sig)
+    qfa5 = GaussianFunctionApproximator(  x0 = qcf.xbar + np.array([0,1]) , sig = sig)
+    qfa6 = GaussianFunctionApproximator(  x0 = qcf.xbar + np.array([-1,0]) , sig = sig)
+    qfa7 = GaussianFunctionApproximator(  x0 = qcf.xbar + np.array([-1,-1]) , sig = sig)
+    qfa8 = GaussianFunctionApproximator(  x0 = qcf.xbar + np.array([0,-1]) , sig = sig)
+    qfa9 = GaussianFunctionApproximator(  x0 = qcf.xbar + np.array([0.5,0]) , sig = sig)
+    qfa10 = GaussianFunctionApproximator(  x0 = qcf.xbar + np.array([0.5,0.5]) , sig = sig)
+    qfa11 = GaussianFunctionApproximator(  x0 = qcf.xbar + np.array([0,0.5]) , sig = sig)
+    qfa = qfa0 + qfa1 + qfa2 + qfa3 + qfa4 + qfa5 + qfa6 + qfa7 + qfa8 + qfa9 + qfa10 + qfa11
     
     Xs = grid_sys.state_from_node_id # All state on the grid
     

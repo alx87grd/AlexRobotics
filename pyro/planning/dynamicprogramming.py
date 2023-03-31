@@ -397,7 +397,7 @@ class DynamicProgramming:
     def animate_cost2go(self, i = 0 , j = 1 , jmax = None , show = True , save = False ,  file_name = 'cost2go_animation'):
         
         self.J  = self.J_list[0]
-        self.pi = self.pi_list[0]
+        #self.pi = self.pi_list[0]
         self.t  = self.t_list[0]
         self.clean_infeasible_set()
         
@@ -417,7 +417,7 @@ class DynamicProgramming:
     def __animate_cost2go(self , i ):
         
         self.J  = self.J_list[i]
-        self.pi = self.pi_list[i]
+        #self.pi = self.pi_list[i]
         self.t  = self.t_list[i]
         self.clean_infeasible_set()
         self.update_cost2go_plot( show = False )
