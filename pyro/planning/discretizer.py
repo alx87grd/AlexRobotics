@@ -731,7 +731,7 @@ class GridDynamicSystem:
 
         fig = plt.figure(figsize= self.figsize, dpi=self.dpi, frameon=True)
         fig.canvas.manager.set_window_title( name )
-        ax  = fig.gca(projection='3d')
+        ax = fig.add_subplot(projection='3d')
 
         xname = self.sys.state_label[x] + ' ' + self.sys.state_units[x]
         yname = self.sys.state_label[y] + ' ' + self.sys.state_units[y]

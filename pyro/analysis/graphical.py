@@ -375,7 +375,7 @@ class Animator:
         self.show3fig = plt.figure(figsize=self.figsize, dpi=self.dpi)
         self.show3fig.canvas.manager.set_window_title('3D Configuration of ' + 
                                             self.sys.name )
-        self.show3ax = self.show3fig.gca(projection='3d')
+        self.show3ax = self.show3fig.add_subplot(projection='3d')
                 
         self.show3lines = []
         
