@@ -27,7 +27,7 @@ qcf = costfunction.QuadraticCostFunction.from_sys(sys)
 qcf.xbar = np.array([ -3.14 , 0 ]) # target
 qcf.INF  = 300
 
-qcf.R[0,0] = 10.0
+qcf.R[0,0] = 1.0
 
 qcf.S[0,0] = 10.0
 qcf.S[1,1] = 10.0
@@ -58,7 +58,7 @@ ctl = dp.get_lookup_table_controller()
 
 #asign controller
 cl_sys = ctl + sys
-cl_sys.x0   = np.array([-3.14,-5])
+cl_sys.x0   = np.array([0., 0.])
 cl_sys.compute_trajectory( 10, 10001, 'euler')
 cl_sys.plot_trajectory('xu')
 cl_sys.plot_phase_plane_trajectory()
