@@ -5,12 +5,32 @@
 *.egg
 *.pyc
 __pycache__/
+*$py.class
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+.installed.cfg
+MANIFEST
+
 
 # Data etc #
 ############################
 *.npy
+*.csv
+*.mat
 
-# Output fig or video, etc #
+# Output files #
 ############################
 output/
 *.html
@@ -34,3 +54,12 @@ output/
 .idea/other.xml
 .idea/workspace.xml
 build/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/

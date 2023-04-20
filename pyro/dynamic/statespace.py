@@ -408,7 +408,9 @@ class StateObserver(StateSpaceSystem):
         Returns
         ----------
 
-        Instance of `StateObserver` with L, the Kalman gain matrix.
+        Instance of `StateObserver` with L, the Kalman gain matrix. A special
+        property `P` is set which corresponds to the state estimation
+        covariance matrix.
 
         """
         Q = np.array(Q, ndmin=2, dtype=np.float64)
@@ -442,6 +444,7 @@ class StateObserver(StateSpaceSystem):
         assert L_kalm.shape == obs.L.shape
 
         obs.L = L_kalm
+        obs.P = P # estimate covariance matrix
         return obs
 
 
@@ -455,12 +458,16 @@ class StateObserver(StateSpaceSystem):
         Returns
         ----------
 
-        Instance of `StateObserver` with L, the Kalman gain matrix.
+        Instance of `StateObserver` with L, the Kalman gain matrix. A special
+        property `P` is set which corresponds to the state estimation
+        covariance matrix.
 
         """
 
-        L = cls.kalman(ss.A, ss.B, ss.C, ss.D, Q, R, G).L
-        return cls.from_ss(ss, L)
+        kalm_obs = cls.kalman(ss.A, ss.B, ss.C, ss.D, Q, R, G)
+        result = cls.from_ss(ss, kalm_obs.L)
+        result.P = kalm_obs.P
+        return result
 
 
     def h(self, x, u, t):

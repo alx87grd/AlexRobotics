@@ -42,7 +42,6 @@ class Test_Obs_TwoDofSs():
 
         L = np.empty([2, 1])
         obs = StateObserver.from_ss(sys, L)
-        return True
 
     def test_kalman_gain_from_ss(self):
         sys = TwoDofSs()
@@ -50,8 +49,16 @@ class Test_Obs_TwoDofSs():
         R = 0.9575;
         kf = StateObserver.kalman_from_ss(sys, Q, R)
 
+        # Kalman gain
         L_matlab = np.array([0.241879988531013, 0.163053708572278]).reshape(2, 1) * 1E-3
+
+        # Oberserver covariance matrix
+        P_matlab = np.array([
+            [0.530701428966605, 0.231600089018445],
+            [0.231600089018445, 0.156123925957956]
+        ]) * 1E-3
         np.testing.assert_array_almost_equal(kf.L, L_matlab)
+        np.testing.assert_array_almost_equal(kf.P, P_matlab)
 
     def test_kalman_gain_from_ABCD(self):
         sys = TwoDofSs()
@@ -59,8 +66,17 @@ class Test_Obs_TwoDofSs():
         R = 0.9575;
         kf = StateObserver.kalman(sys.A, sys.B, sys.C, sys.D, Q, R)
 
+        # Kalman gain
         L_matlab = np.array([0.241879988531013, 0.163053708572278]).reshape(2, 1) * 1E-3
+
+        # Oberserver covariance matrix
+        P_matlab = np.array([
+            [0.530701428966605, 0.231600089018445],
+            [0.231600089018445, 0.156123925957956]
+        ]) * 1E-3
+
         np.testing.assert_array_almost_equal(kf.L, L_matlab)
+        np.testing.assert_array_almost_equal(kf.P, P_matlab)
 
     def test_kalman_check_dims(self):
         sys = TwoDofSs()
@@ -108,7 +124,8 @@ class Test_Obs_TwoDofSs():
         kf.x0 = np.array([0, 0])
 
         osys = kf + sys
-        traj = osys.compute_trajectory(tf=10_000, n=50)
+        tf = 10_000
+        traj = osys.compute_trajectory(tf=tf, n=50, method="DOP853", rtol=1E-4, atol=1E-3)
 
         # Matlab generated data
         expected_x_est_txt = """
@@ -177,3 +194,7 @@ class Test_Obs_TwoDofSs():
 
         # Compare against matlab with 0.1 % error
         np.testing.assert_allclose(expected_x_est, traj.y, rtol=1E-3, atol=0.01)
+
+if __name__ == "__main__":
+    import scipy.io
+    Test_Obs_TwoDofSs().test_sim_observed_sys()
