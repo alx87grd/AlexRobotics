@@ -36,7 +36,7 @@ class KinematicBicyleModel( system.ContinuousDynamicSystem ):
         self.p = 3
         
         # initialize standard params
-        super().__init__(self.n, self.m, self.p)
+        system.ContinuousDynamicSystem.__init__(self, self.n, self.m, self.p)
         
         # Labels
         self.name = 'Kinematic Bicyle Model'
@@ -217,7 +217,7 @@ class HolonomicMobileRobot( system.ContinuousDynamicSystem ):
         self.p = 2
         
         # initialize standard params
-        super().__init__(self.n, self.m, self.p)
+        system.ContinuousDynamicSystem.__init__(self, self.n, self.m, self.p)
         
         # Labels
         self.name = 'Holonomic Mobile Robot'
@@ -346,8 +346,8 @@ class HolonomicMobileRobotwithObstacles( HolonomicMobileRobot ):
     def __init__(self):
         """ """
         # initialize standard params
-        super().__init__()
-
+        HolonomicMobileRobot.__init__(self)
+        
         # Labels
         self.name = 'Holonomic Mobile Robot with Obstacles'
 
@@ -476,7 +476,7 @@ class Holonomic3DMobileRobot(system.ContinuousDynamicSystem):
         self.p = 3
 
         # initialize standard params
-        super().__init__(self.n, self.m, self.p)
+        system.ContinuousDynamicSystem.__init__(self, self.n, self.m, self.p)
 
         # Labels
         self.name = 'Holonomic 3D Mobile Robot'
@@ -598,7 +598,7 @@ class Holonomic3DMobileRobotwithObstacles(Holonomic3DMobileRobot):
     def __init__(self):
         """ """
         # initialize standard params
-        super().__init__()
+        Holonomic3DMobileRobot.__init__(self)
 
         # Labels
         self.name = 'Holonomic 3D Mobile Robot with Obstacles'
@@ -734,7 +734,7 @@ class KinematicCarModel( KinematicBicyleModel ):
         """ """
         
         # initialize standard params
-        super().__init__()
+        KinematicBicyleModel.__init__( self )
         
         # Model param
         self.width  = 2.00
@@ -989,7 +989,7 @@ class KinematicCarModelwithObstacles( KinematicCarModel ):
     def __init__(self):
         """ """
         # initialize standard params
-        super().__init__()
+        KinematicCarModel.__init__(self)
         
         # Labels
         self.name = 'Kinematic Car Model with Obstacles'
@@ -1081,7 +1081,7 @@ class UdeSRacecar( KinematicCarModelwithObstacles ):
         """ """
 
         # initialize standard params
-        super().__init__()
+        KinematicCarModelwithObstacles.__init__( self )
 
         # Model param
         self.width = 0.17
@@ -1103,6 +1103,97 @@ class UdeSRacecar( KinematicCarModelwithObstacles ):
             [(-0.4,  0.2), ( 0.1, 0.4)],
             [( 1.2, -0.1), ( 1.7, 0.1)]
         ]
+        
+
+
+##############################################################################
+#
+##############################################################################
+        
+class ConstantSpeedKinematicCarModel( KinematicCarModel ):
+    """ 
+    Equations of Motion
+    -------------------------
+    dx   = V cos ( phi )
+    dy   = V sin ( phi )
+    dphi = V/l tan ( beta )
+    """
+    
+    ############################
+    def __init__(self):
+        """ """
+    
+        # Dimensions
+        self.n = 3   
+        self.m = 1   
+        self.p = 3
+        
+        # initialize standard params
+        system.ContinuousDynamicSystem.__init__(self, self.n, self.m, self.p)
+        
+        # Labels
+        self.name = 'Constant Speed Kinematic Car Model'
+        self.state_label = ['x','y','theta']
+        self.input_label = ['beta']
+        self.output_label = ['x','y','theta']
+        
+        # Units
+        self.state_units = ['[m]','[m]','[rad]']
+        self.input_units = ['[rad]']
+        self.output_units = ['[m]','[m]','[rad]']
+        
+        # State working range
+        self.x_ub = np.array([+5,+2,+3.14])
+        self.x_lb = np.array([-5,-2,-3.14])
+        
+        # Model param
+        self.speed  = 2.00
+        self.width  = 2.00
+        self.a      = 2.00
+        self.b      = 3.00
+        self.lenght = self.a+self.b   
+        
+        self.lenght_tire = 0.60
+        self.width_tire  = 0.25
+        
+        # Graphic output parameters 
+        self.dynamic_domain  = True
+        self.dynamic_range   = self.lenght * 2
+        
+        
+    #############################
+    def f(self, x = np.zeros(3) , u = np.zeros(1) , t = 0 ):
+        """ 
+        Continuous time foward dynamics evaluation
+        
+        dx = f(x,u,t)
+        
+        INPUTS
+        x  : state vector             n x 1
+        u  : control inputs vector    m x 1
+        t  : time                     1 x 1
+        
+        OUPUTS
+        dx : state derivative vectror n x 1
+        
+        """
+        
+        dx = np.zeros(self.n) # State derivative vector
+
+        dx[0] = self.speed * np.cos( x[2] )
+        dx[1] = self.speed * np.sin( x[2] )
+        dx[2] = self.speed * np.tan( u[0] ) * ( 1. / self.lenght) 
+        
+        return dx
+    
+    
+    #############################
+    def xut2q( self, x , u , t ):
+        """ compute config q """
+        
+        q   = np.append(  x , u[0] ) # steering angle is part of the config
+        
+        return q
         
 
 '''

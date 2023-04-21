@@ -24,7 +24,7 @@ class RotatingCartPole( mechanical.MechanicalSystem ):
         """ """
                
         # initialize standard params
-        super().__init__(2)
+        mechanical.MechanicalSystem.__init__( self, 2)
         
         # Name
         self.name = 'Rotating Cart Pole'
@@ -327,5 +327,5 @@ if __name__ == "__main__":
     
     sys = UnderActuatedRotatingCartPole()
     sys.x0 = np.array([0,0.1,0,0])
-    sys.show3(np.array([0.3,0.2]))
+    #sys.show3(np.array([0.3,0.2]))
     sys.animate_simulation( is_3d = True)

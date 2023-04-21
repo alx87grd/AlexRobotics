@@ -37,7 +37,7 @@ class RobotController( controller.StaticController ) :
         self.m = dof      # assuming fully-actuated system
         self.p = dof * 2  # y = x ( full state feedback )
         
-        super().__init__(self.k, self.m, self.p)
+        controller.StaticController.__init__( self, self.k, self.m, self.p)
         
         # Label
         self.name = 'Robot Controller'
@@ -78,7 +78,7 @@ class JointPD( RobotController ) :
     def __init__(self, dof = 1, kp = 1, kd = 0):
         """ """
         
-        super().__init__( dof )
+        RobotController.__init__( self, dof )
         
         # Label
         self.name = 'Joint PD Controller'
@@ -149,7 +149,7 @@ class EndEffectorPD( RobotController ) :
         self.J       = robot.J
         self.e       = robot.e # nb of effector dof
         
-        super().__init__( robot.dof )
+        RobotController.__init__( self , robot.dof )
         
         # Label
         self.name = 'End-Effector PID Controller'
@@ -294,7 +294,10 @@ class EndEffectorKinematicController( RobotController ) :
         
         return dq_r
     
-    
+###############################################################################
+# End-Effector Kinematic with nullspace
+###############################################################################
+
 class EndEffectorKinematicControllerWithNullSpaceTask( EndEffectorKinematicController ) :
     """ 
     Kinematic effector coordinates controller using the Jacobian of the system
@@ -314,7 +317,7 @@ class EndEffectorKinematicControllerWithNullSpaceTask( EndEffectorKinematicContr
     def __init__(self, robot, k = 1 , k_null = 1):
         """ """
         
-        super().__init__( robot , k )
+        EndEffectorKinematicController.__init__( self, robot , k )
         
         
         self.gains_null = np.ones( self.dof  ) * k_null
@@ -413,7 +416,7 @@ class JointPID( controller.DynamicController ) :
         self.m = dof      # assuming fully-actuated system
         self.p = dof * 2  # y = x ( full state feedback )
         
-        super().__init__(self.k, self.l, self.m, self.p)
+        controller.DynamicController.__init__( self, self.k, self.l, self.m, self.p)
         
         # Label
         self.name = 'Joint PID Controller'
@@ -545,7 +548,7 @@ class EndEffectorPID( controller.DynamicController ) :
         self.m = dof      # assuming fully-actuated system
         self.p = dof * 2  # y = x ( full state feedback )
         
-        super().__init__(self.k, self.l, self.m, self.p)
+        controller.DynamicController.__init__( self, self.k, self.l, self.m, self.p)
         
         # Label
         self.name = 'End-Effector PID Controller'
@@ -667,7 +670,7 @@ class old_JointPID( RobotController ) :
     def __init__(self, dof = 1, kp = 1, ki = 0, kd = 0):
         """ """
         
-        super().__init__( dof )
+        RobotController.__init__( self, dof )
         
         # Label
         self.name = 'Joint PID Controller'
@@ -748,7 +751,7 @@ class old_EndEffectorPID( RobotController ) :
         self.J       = robot.J
         self.e       = robot.e # nb of effector dof
         
-        super().__init__( robot.dof )
+        RobotController.__init__( self, robot.dof )
         
         # Label
         self.name = 'End-Effector PID Controller'

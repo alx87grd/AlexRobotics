@@ -7,6 +7,7 @@ Created on Wed May  8 08:47:05 2019
 
 ###############################################################################
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 ###############################################################################
 from pyro.dynamic import system
@@ -70,7 +71,7 @@ class Manipulator( mechanical.MechanicalSystem ):
         self.e = e
                
         # initialize standard params
-        super().__init__( dof )
+        mechanical.MechanicalSystem.__init__( self , dof )
         
         # Name
         self.name = str(dof) + 'Joint Manipulator Robot'
@@ -276,7 +277,69 @@ class Manipulator( mechanical.MechanicalSystem ):
         simfig.canvas.draw()
         plt.show()
                 
-        return 
+        return simfig
+    
+    
+    ##############################
+    def plot_manipulability_ellipsoid(self, q ):
+        """ 
+        Plot the manipulability ellispoid based on the jacobian
+        --------------------------------------------------------------
+        2D only
+        
+        """  
+        
+        # Plot robot config & base figure
+        animator = self.get_animator()
+        animator.show( q )
+        fig = animator.showfig
+        ax  = animator.showax
+        
+        # End-effector position
+        r = self.forward_kinematic_effector( q )
+        
+        JJT     = self.J(q) @ self.J(q).T
+        
+        #u,s,v = np.linalg.svd( self.J(q) )
+        l , v = np.linalg.eig( JJT )
+        
+        theta = np.arctan2( v[1,0] , v[0,0] ) * 180/3.1416
+        w = np.sqrt(l[0])+0.01
+        h = np.sqrt(l[1])+0.01
+        e = matplotlib.patches.Ellipse(xy=(r[0], r[1]), width=w, height=h, angle=theta)
+        e.set_clip_box(ax.bbox)
+        e.set_alpha(0.1)
+        e.set_facecolor('b')
+        ax.add_artist(e)
+        
+        try:
+            JJT_inv = np.linalg.inv(JJT)
+            l , v   = np.linalg.eig( JJT_inv )
+            
+            #u,s,v = np.linalg.svd( B )
+            
+            theta = np.arctan2( v[1,0] , v[0,0] ) * 180/3.1416
+            
+            scale = 0.1 # Arbitrary number only for qualitative representation
+            
+            w =  np.sqrt(l[0])+0.01
+            h =  np.sqrt(l[1])+0.01
+            
+            w_s = w * scale
+            h_s = h * scale
+            
+            e = matplotlib.patches.Ellipse(xy=(r[0], r[1]), width=w_s, height=h_s, angle=theta)
+            e.set_clip_box(ax.bbox)
+            e.set_alpha(0.1)
+            e.set_facecolor('r')
+            ax.add_artist(e)
+            
+        except:
+            print('Force ellispoid was not plotted since the configuration is singular')
+        
+        fig.canvas.draw_idle()
+        plt.show()
+        
         
 
 
@@ -343,7 +406,7 @@ class SpeedControlledManipulator( system.ContinuousDynamicSystem ):
         n = dof
         
         # initialize standard params
-        super().__init__(dof, dof, dof)
+        system.ContinuousDynamicSystem.__init__( self, dof, dof, dof)
         
         # Name
         self.name = str(n) + ' Joint Speed Controlled Manipulator'
@@ -461,7 +524,7 @@ class OneLinkManipulator( Manipulator ):
         e   = 2
                
         # initialize standard params
-        super().__init__(dof , m , e)
+        Manipulator.__init__( self, dof , m , e)
         
         # Name
         self.name = 'One Link Manipulator'
@@ -742,13 +805,16 @@ class TwoLinkManipulator( Manipulator ):
         e   = 2
                
         # initialize standard params
-        super().__init__(dof , m , e)
+        Manipulator.__init__( self, dof , m , e)
         
         # Name
         self.name = 'Two Link Manipulator'
         
         # params
         self.setparams()
+        
+        # Graphic output
+        self.l_domain = 1.
                 
             
     #############################
@@ -934,7 +1000,7 @@ class TwoLinkManipulator( Manipulator ):
     def forward_kinematic_domain(self, q ):
         """ 
         """
-        l = 1
+        l = self.l_domain
         
         domain  = [ (-l,l) , (-l,l) , (-l,l) ]#  
                 
@@ -1030,7 +1096,7 @@ class ThreeLinkManipulator3D( Manipulator ):
         e   = 3
                
         # initialize standard params
-        super().__init__(dof , m , e)
+        Manipulator.__init__( self, dof , m , e)
         
         # Name
         self.name = 'Three Link Manipulator'
@@ -1440,7 +1506,7 @@ class FiveLinkPlanarManipulator( Manipulator ):
         e   = 2
                
         # initialize standard params
-        super().__init__(dof , m , e)
+        Manipulator.__init__( self, dof , m , e)
         
         # Name
         self.name = 'Five Link Manipulator'
@@ -1619,7 +1685,7 @@ class TwoLinkManipulatorwithObstacles( TwoLinkManipulator ):
     def __init__(self):
         """ """
         # initialize standard params
-        super().__init__()
+        TwoLinkManipulator.__init__( self )
         
         self.l1 = 1.1
         self.l2 = 0.9
@@ -1731,7 +1797,7 @@ class FiveLinkPlanarManipulatorwithObstacles( FiveLinkPlanarManipulator ):
     def __init__(self):
         """ """
         # initialize standard params
-        super().__init__()
+        FiveLinkPlanarManipulator.__init__( self )
         
         # Labels
         self.name = 'Five Link Planar Manipulator with Obstacles'
@@ -1832,9 +1898,20 @@ if __name__ == "__main__":
     sys.x0[0]   = 0.1
     sys.ubar[0] = 4
     sys.ubar[1] = 4
-    sys.animate_simulation()
-    sys.plot_trajectory()
-    sys.plot_end_effector_trajectory()
+    #sys.animate_simulation()
+    #sys.plot_trajectory()
+    #sys.plot_end_effector_trajectory()
+    
+    
+    #Ellispoid validation
+    sys.plot_manipulability_ellipsoid( [0.0,0.0] )
+    sys.plot_manipulability_ellipsoid( [1.0,0.1] )
+    sys.plot_manipulability_ellipsoid( [2.0,0.8] )
+    sys.plot_manipulability_ellipsoid( [3.0,1.6] )
+    
+    sys.l1 = np.sqrt(2)/2
+    sys.l2 = 0.5
+    sys.plot_manipulability_ellipsoid( [-np.pi/4, +3*np.pi/4] ) #equal
     
     
     #sys = ThreeLinkManipulator3D()

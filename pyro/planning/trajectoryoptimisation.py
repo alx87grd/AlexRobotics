@@ -170,8 +170,7 @@ class DirectCollocationTrajectoryOptimisation:
             u[i,:]  = uT[:,i]
             t[i]    = i*self.dt
             dx[i,:] = self.sys.f(x[i,:],u[i,:],t[i])
-            y[i,:]  = self.sys.h(x[i,:],u[i,:],t[i])
-            dJ[i]   = self.cost_function.g(x[i,:],u[i,:],y[i,:],t[i])
+            dJ[i]   = self.cost_function.g(x[i,:],u[i,:],t[i])
             
             J_sum = J_sum + dJ[i]
             J[i]  = J_sum
@@ -205,15 +204,13 @@ class DirectCollocationTrajectoryOptimisation:
             x_i = x[:,i]
             u_i = u[:,i]
             t_i = i*self.dt
-            y_i = self.sys.h(x_i,u_i,t_i)
-            dJi = self.cost_function.g( x_i , u_i,  y_i, t_i )
+            dJi = self.cost_function.g( x_i , u_i, t_i )
             
             #i+1
             x_i1 = x[:,i+1]
             u_i1 = u[:,i+1]
             t_i1 = (i+1)*self.dt
-            y_i1 = self.sys.h(x_i1,u_i1,t_i1)
-            dJi1 = self.cost_function.g( x_i1 , u_i1,  y_i1, t_i1 )
+            dJi1 = self.cost_function.g( x_i1 , u_i1, t_i1 )
             
             #trapez
             dJ = 0.5 * ( dJi + dJi1 )

@@ -159,6 +159,7 @@ class TrajectoryPlotter:
         self.fig   = simfig
         self.plots = plots
         
+        return (simfig, plots)
     
     ##########################################################################
     def phase_plane_trajectory(self, traj, x_axis=0, y_axis=1):
@@ -342,7 +343,7 @@ class Animator:
             x_pts     = pts[:, x_axis ]
             y_pts     = pts[:, y_axis ]
             linestyle = lines_style[j] + lines_color[j]
-            line      = self.showax.plot( x_pts, y_pts, linestyle )
+            line,     = self.showax.plot( x_pts, y_pts, linestyle )
             
             self.showlines.append( line )
 
@@ -374,7 +375,7 @@ class Animator:
         self.show3fig = plt.figure(figsize=self.figsize, dpi=self.dpi)
         self.show3fig.canvas.manager.set_window_title('3D Configuration of ' + 
                                             self.sys.name )
-        self.show3ax = self.show3fig.gca(projection='3d')
+        self.show3ax = self.show3fig.add_subplot(projection='3d')
                 
         self.show3lines = []
         
@@ -383,7 +384,7 @@ class Animator:
             y_pts     = pts[:, 1 ]
             z_pts     = pts[:, 2 ]
             linestyle = lines_style[j] + lines_color[j]
-            line      = self.show3ax.plot( x_pts, y_pts, z_pts, linestyle)
+            line,     = self.show3ax.plot( x_pts, y_pts, z_pts, linestyle)
             
             self.show3lines.append( line )
             
@@ -395,6 +396,108 @@ class Animator:
         self.show3ax.set_zlabel('Z')
         self.show3ax.tick_params(axis='both', which='both', labelsize=self.fontsize)
         
+        plt.show()
+        
+    ###########################################################################
+    def show_plus(self, x , u , t , x_axis = 0 , y_axis = 1 ):
+        """ Plot figure of system at state x """
+        
+        # Update axis to plot in 2D
+        
+        self.x_axis = x_axis
+        self.y_axis = y_axis
+        
+        # Get data
+        lines_data = self.get_lines(x, u, t)
+            
+        # Save data in lists for the whole trajectory
+        lines_pts        = lines_data[0]  
+        lines_style      = lines_data[1]  
+        lines_color      = lines_data[2]
+        lines_plus_pts   = lines_data[3]
+        lines_plus_style = lines_data[4]
+        lines_plus_color = lines_data[5]
+        domain           = lines_data[6]  
+        
+        # Plot
+        self.showfig = plt.figure(figsize=self.figsize, dpi=self.dpi)
+        self.showfig.canvas.manager.set_window_title('2D plot of ' + 
+                                            self.sys.name )
+        self.showax = self.showfig.add_subplot(111, autoscale_on=False )
+        self.showax.grid()
+        self.showax.axis('equal')
+        self.showax.set_xlim(  domain[x_axis] )
+        self.showax.set_ylim(  domain[y_axis] )
+        self.showax.tick_params(axis='both', which='both', labelsize=self.fontsize)
+        
+        self.showlines      = []
+        self.showlines_plus = []
+        
+        # for each lines
+        for j, line_pts in enumerate( lines_pts ):
+            
+            linestyle = lines_style[j] + lines_color[j]
+            
+            thisx = line_pts[:,self.x_axis]
+            thisy = line_pts[:,self.y_axis]
+            line, = self.showax.plot(thisx, thisy, linestyle)
+
+            self.showfig.tight_layout()
+                
+            self.showlines.append( line )
+            
+        # Lines plus optionnal 
+        if self.sys.lines_plus:
+            
+            for j, line_pts in enumerate( lines_plus_pts ):
+                
+                linestyle = lines_plus_style[j] + lines_plus_color[j]
+                
+                thisx = line_pts[:,self.x_axis]
+                thisy = line_pts[:,self.y_axis]
+                line, = self.showax.plot(thisx, thisy, linestyle)
+                    
+                self.showlines_plus.append( line )
+
+        plt.show()
+        
+    ###########################################################################
+    def show_plus_update(self, x , u , t ):
+        """ Update a show plus figure """
+        
+        # Get data
+        lines_data = self.get_lines(x, u, t)
+            
+        # Line data
+        lines_pts        = lines_data[0]  
+        lines_style      = lines_data[1]  
+        lines_color      = lines_data[2]
+        lines_plus_pts   = lines_data[3]
+        lines_plus_style = lines_data[4]
+        lines_plus_color = lines_data[5]
+        domain           = lines_data[6]  
+        
+        # Update lines
+        for j, line in enumerate(self.showlines):
+            thisx = lines_pts[j][:,self.x_axis]
+            thisy = lines_pts[j][:,self.y_axis]
+            line.set_data(thisx, thisy)
+            
+        if self.sys.lines_plus:
+            # Update lines plus
+            for j, line in enumerate(self.showlines_plus):
+                thisx = lines_plus_pts[j][:,self.x_axis]
+                thisy = lines_plus_pts[j][:,self.y_axis]
+                line.set_data(thisx, thisy)
+            
+        # Update domain
+        i_x = self.x_axis
+        i_y = self.y_axis
+        self.showax.set_xlim( domain[i_x] )
+        self.showax.set_ylim( domain[i_y] )
+        
+        self.showfig.canvas.draw()
+
         plt.show()
         
         

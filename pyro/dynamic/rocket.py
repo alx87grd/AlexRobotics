@@ -31,7 +31,7 @@ class Rocket( mechanical.MechanicalSystemWithPositionInputs ):
         """ """
         
         # initialize standard params
-        super().__init__( 3 , 1 , 1 )
+        mechanical.MechanicalSystemWithPositionInputs.__init__( self, 3 , 1 , 1 )
         
         # Labels
         self.name = '2D rocket model'

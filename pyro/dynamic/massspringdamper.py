@@ -22,13 +22,13 @@ class SingleMass( statespace.StateSpaceSystem ):
     """
 
     ############################
-    def __init__(self, m=1, k=2, b=0):
+    def __init__(self, mass=1, k=2, b=0):
         """ """
 
         # params
-        self.m = m
-        self.k = k
-        self.b = b
+        self.mass = mass
+        self.k    = k
+        self.b    = b
         
         self.l1 = 2
         self.l2 = 1
@@ -37,7 +37,7 @@ class SingleMass( statespace.StateSpaceSystem ):
         self.compute_ABCD()
         
         # initialize standard params
-        super().__init__(self.A, self.B, self.C, self.D)
+        statespace.StateSpaceSystem.__init__( self, self.A, self.B, self.C, self.D)
         
         # Name and labels
         self.name = 'Linear-Spring-Damper'
@@ -56,9 +56,9 @@ class SingleMass( statespace.StateSpaceSystem ):
         """ 
         """
         self.A = np.array([ [ 0              ,              1 ], 
-                            [ -self.k/self.m , -self.b/self.m ] ])
+                            [ -self.k/self.mass , -self.b/self.mass ] ])
         self.B = np.array([ [ 0 ],
-                            [ 1 /self.m ]])
+                            [ 1 /self.mass ]])
         self.C = np.array([ [ 1 , 0 ]])
         self.D = np.array([ [ 0 ]])
                 
@@ -196,7 +196,9 @@ class TwoMass( statespace.StateSpaceSystem ):
 
     ############################
     def __init__(self, m=1, k=2, b=0.2, output_mass = 2):
-        """ """
+        """ 
+        
+        """
 
         # params
         self.m1 = m
@@ -216,7 +218,7 @@ class TwoMass( statespace.StateSpaceSystem ):
         self.compute_ABCD()
         
         # initialize standard params
-        super().__init__(self.A, self.B, self.C, self.D)
+        statespace.StateSpaceSystem.__init__( self, self.A, self.B, self.C, self.D)
         
         # Name and labels
         self.name = 'Two mass with linear spring-dampers'
@@ -233,7 +235,14 @@ class TwoMass( statespace.StateSpaceSystem ):
     ###########################################################################
     def compute_ABCD(self):
         """ 
+        This function recompute the state-space representation matrix, 
+        based on m1, m2, k1, k2, b1, b2 parameters. 
+        
+        The matrix C can also be adjusted to represent using mass 1 or mass 2 
+        position as the system output, according to this attribute:
+        self.output_mass = 1 or self.output_mass = 2
         """
+        
         self.A = np.array([ [ 0, 0, 1, 0 ],
                             [ 0, 0, 0, 1 ],
                             [ -(self.k1+self.k2)/self.m1, +self.k2/self.m1, -self.b1/self.m1, 0],
@@ -264,7 +273,7 @@ class TwoMass( statespace.StateSpaceSystem ):
     def xut2q( self, x , u , t ):
         """ Compute configuration variables ( q vector ) """
         
-        q = np.array([ x[0], x[1], u[0] ])
+        q = np.array([ x[0], x[1] ])
 
         return q
     
@@ -282,13 +291,15 @@ class TwoMass( statespace.StateSpaceSystem ):
     ###########################################################################
     def forward_kinematic_lines(self, q ):
         """ 
-        Compute points p = [x;y;z] positions given config q 
+        Compute 3D lines  given config q 
         ----------------------------------------------------
-        - points of interest for ploting
+        Inputs:
+        q : array describing the system configuration
         
         Outpus:
-        lines_pts = [] : a list of array (n_pts x 3) for each lines
-        
+        lines_pts   = [] : a list of array (n_pts x 3) 
+        lines_style = [] : a list of line styles
+        lines_color = [] : a list of line color
         """
         
         lines_pts   = [] # list of array (n_pts x 3) for each lines
@@ -455,7 +466,7 @@ class ThreeMass( statespace.StateSpaceSystem ):
         self.compute_ABCD()
         
         # initialize standard params
-        super().__init__(self.A, self.B, self.C, self.D)
+        statespace.StateSpaceSystem.__init__( self, self.A, self.B, self.C, self.D)
         
         # Name and labels
         self.name = 'Three mass with linear spring-dampers'
@@ -728,7 +739,7 @@ class FloatingSingleMass( SingleMass ):
     ############################
     def __init__(self, m=1, b=0):
         """ """
-        super().__init__(m,0,b)
+        SingleMass.__init__(self,m,0,b)
         
         # Name and labels
         self.name = 'Mass'
@@ -778,7 +789,7 @@ class FloatingTwoMass( TwoMass ):
     ############################
     def __init__(self, m=1, k=1, b=0, output_mass=2):
         """ """
-        super().__init__(m,k,b,output_mass)
+        TwoMass.__init__(self,m,k,b,output_mass)
         
         self.k1 = 0  # no base spring
         self.compute_ABCD()
@@ -872,7 +883,7 @@ class FloatingThreeMass( ThreeMass ):
     ############################
     def __init__(self, m=1, k=1, b=0, output_mass=3):
         """ """
-        super().__init__(m,k,b,output_mass)
+        ThreeMass.__init__(self,m,k,b,output_mass)
         self.k1 = 0
         self.compute_ABCD()
     

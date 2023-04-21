@@ -403,8 +403,8 @@ class ContinuousDynamicSystem:
         
     #############################
     def compute_trajectory(
-        self, tf=10, n=10001, solver='ode'):
-        """ 
+        self, tf=10, n=10001, solver='ode', **solver_args):
+        """
         Simulation of time evolution of the system
         ------------------------------------------------
         tf : final time
@@ -413,7 +413,8 @@ class ContinuousDynamicSystem:
 
         sim = simulation.Simulator(self, tf, n, solver)
 
-        self.traj = sim.compute() # save the result in the instance
+        # solve and save the result in the instance
+        self.traj = sim.compute(**solver_args)
 
         return self.traj
 
@@ -432,7 +433,7 @@ class ContinuousDynamicSystem:
             self.compute_trajectory()
         
         plotter = self.get_plotter()
-        plotter.plot( self.traj, plot, **kwargs)
+        return plotter.plot( self.traj, plot, **kwargs)
 
 
     #############################
@@ -525,10 +526,43 @@ class ContinuousDynamicSystem:
             self.compute_trajectory()
             
         animator = self.get_animator()
-        animator.animate_simulation( self.traj, show = False )
+        animator.animate_simulation( self.traj, show = False , **kwargs )
         html_video = animator.ani.to_html5_video()
         
         return html_video
+    
+    
+    #############################
+    def generate_mode_animation_html(self, i = 0 , is_3d = False ):
+        """
+        Linearize and show eigen mode i with html output
+        """
+        
+        from pyro.dynamic.statespace import linearize
+        
+        # 
+        ss = linearize( self )
+        
+        # Compute eigen decomposition
+        ss.compute_eigen_modes()
+        
+        # Simulate one mode
+        traj = ss.compute_eigen_mode_traj( i )
+        
+        # Animate mode
+        animator       = ss.get_animator()
+        
+        #label
+        template = 'Mode %i \n%0.1f+%0.1fj'
+        label    = template % (i, ss.poles[i].real, ss.poles[i].imag)
+        animator.top_right_label = label
+        
+        animator.animate_simulation( traj, 3.0, is_3d , show = False)
+        
+        html_video = animator.ani.to_html5_video()
+        
+        return html_video
+    
         
     #############################
     def plot_linearized_bode(self, u_index=0, y_index=0):

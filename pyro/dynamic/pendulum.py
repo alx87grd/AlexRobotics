@@ -39,7 +39,7 @@ class SinglePendulum( mechanical.MechanicalSystem ):
         """ """
                
         # initialize standard params
-        super().__init__(1)
+        mechanical.MechanicalSystem.__init__(self, 1)
         
         # Name
         self.name = 'Single Pendulum'
@@ -286,13 +286,15 @@ class DoublePendulum( mechanical.MechanicalSystem ):
         """ """
                
         # initialize standard params
-        super().__init__(2)
+        mechanical.MechanicalSystem.__init__(self, 2 )
         
         # Name
         self.name = 'Double Pendulum'
         
         # params
         self.setparams()
+        
+        self.l_domain = 3
                 
             
     #############################
@@ -438,7 +440,7 @@ class DoublePendulum( mechanical.MechanicalSystem ):
     def forward_kinematic_domain(self, q ):
         """ 
         """
-        l = 3
+        l = self.l_domain
         
         domain  = [ (-l,l) , (-l,l) , (-l,l) ]#  
                 
@@ -642,7 +644,7 @@ class TwoIndependentSinglePendulum( mechanical.MechanicalSystem ):
         """ """
                
         # initialize standard params
-        super().__init__(2)
+        mechanical.MechanicalSystem.__init__(self, 2)
         
         # Name
         self.name = 'Two Independent Single Pendulum'

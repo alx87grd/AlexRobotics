@@ -35,7 +35,7 @@ class Drone2D( mechanical.MechanicalSystem ):
         actuators = 2
         
         # initialize standard params
-        super().__init__( dof, actuators )
+        mechanical.MechanicalSystem.__init__( self, dof, actuators )
         
         # Labels
         self.name = '2D drone model'
@@ -289,6 +289,281 @@ class Drone2D( mechanical.MechanicalSystem ):
         lines_pts.append( pts )
         lines_style.append( '-')
         lines_color.append( 'r' )
+                
+        return lines_pts , lines_style , lines_color
+    
+  
+    
+  
+
+
+##############################################################################
+# 2D planar drone
+##############################################################################
+    
+    
+##############################################################################
+class ConstantSpeedHelicopterTunnel( system.ContinuousDynamicSystem ):
+    """ 
+
+    """
+    
+    ############################
+    def __init__(self):
+        """ """
+    
+        # Dimensions
+        self.n = 3   
+        self.m = 1   
+        self.p = 3
+        
+        # initialize standard params
+        system.ContinuousDynamicSystem.__init__(self, self.n, self.m, self.p)
+        
+        # Labels
+        self.name = 'Helicopter in a tunnel'
+        self.state_label = ['dy','y','x']
+        self.input_label = ['f']
+        self.output_label = self.state_label
+        
+        # Units
+        self.state_units = ['[m/sec]','[m]','[m]']
+        self.input_units = ['[N]']
+        self.output_units = self.state_units
+        
+        # State working range
+        self.x_ub = np.array([+10,+10,+20])
+        self.x_lb = np.array([-10,  0,+0])
+        
+        # Model param
+        self.mass  = 1
+        self.vx    = 10
+        self.width = 1.0
+        
+        # Graphic output parameters 
+        self.dynamic_domain  = True
+        self.dynamic_range   = 12
+        
+        # Obstacles
+        self.obstacles = [
+                [ (2,2),(4,4)],
+                [ (8,5),(10,8)],
+                [ (14,0),(16,4)]
+                ]
+
+    #############################
+    def isavalidstate(self , x ):
+        """ check if x is in the state domain """
+
+        ans = False
+
+        for i in range(self.n):
+            ans = ans or ( x[i] < self.x_lb[i] )
+            ans = ans or ( x[i] > self.x_ub[i] )
+
+        for obs in self.obstacles:
+            on_obs = (( ( x[2] + self.width ) > obs[0][0]) and
+                      ( ( x[1] + self.width ) > obs[0][1]) and
+                      ( ( x[2] - self.width ) < obs[1][0]) and
+                      ( ( x[1] - self.width ) < obs[1][1]) )
+
+            ans = ans or on_obs
+
+        return not(ans)
+        
+
+    #############################
+    def f(self, x = np.zeros(3) , u = np.zeros(1) , t = 0 ):
+        """ 
+        Continuous time foward dynamics evaluation
+        
+        dx = f(x,u,t)
+        
+        INPUTS
+        x  : state vector             n x 1
+        u  : control inputs vector    m x 1
+        t  : time                     1 x 1
+        
+        OUPUTS
+        dx : state derivative vectror n x 1
+        
+        """
+        
+        dx = np.zeros(self.n) # State derivative vector
+        
+        dx[0] = 1./self.mass * u[0]
+        dx[1] = x[0]
+        dx[2] = self.vx
+        
+        return dx
+    
+    
+    ###########################################################################
+    # For graphical output
+    ###########################################################################
+    
+    
+    #############################
+    def xut2q( self, x , u , t ):
+        """ compute config q """
+        
+        q   = np.array([x[2],x[1]])
+        
+        return q
+    
+    
+    ###########################################################################
+    def forward_kinematic_domain(self, q ):
+        """ 
+        """
+        l = self.dynamic_range
+        
+        x = q[0]
+        y = q[1]
+        z = 0
+        
+        if self.dynamic_domain:
+        
+            domain  = [ ( -l + x , l + x ) ,
+                        ( -l + y , l + y ) ,
+                        ( -l + z , l + z ) ]#  
+        else:
+            
+            domain  = [ ( -l , l ) ,
+                        ( -l , l ) ,
+                        ( -l , l ) ]#
+            
+                
+        return domain
+    
+    
+    ###########################################################################
+    def forward_kinematic_lines(self, q ):
+        """ 
+        Compute points p = [x;y;z] positions given config q 
+        ----------------------------------------------------
+        - points of interest for ploting
+        
+        Outpus:
+        lines_pts = [] : a list of array (n_pts x 3) for each lines
+        
+        """
+        
+        lines_pts   = [] # list of array (n_pts x 3) for each lines
+        lines_style = []
+        lines_color = []
+        
+        
+        ###########################
+        # Vehicule
+        ###########################
+        
+        pts      = np.zeros(( 5 , 3 ))
+        
+        l = self.width
+        
+        xyz = np.array([ q[0] , q[1] , 0 ])
+        
+        pts[0,:] =  np.array([-l,+l,0]) + xyz
+        pts[1,:] =  np.array([+l,+l,0]) + xyz
+        pts[2,:] =  np.array([+l,-l,0]) + xyz
+        pts[3,:] =  np.array([-l,-l,0]) + xyz
+        pts[4,:] =  pts[0,:]
+        
+        lines_pts.append( pts )
+        lines_style.append( '-')
+        lines_color.append( 'b')
+        
+        ###########################
+        # bottom line
+        ###########################
+        
+        pts = np.zeros((2,3))
+        
+        pts[0,0] = -10000
+        pts[1,0] = 10000
+        pts[0,1] = self.x_lb[1] -l
+        pts[1,1] = self.x_lb[1] -l
+        
+        lines_pts.append( pts )
+        lines_style.append('--')
+        lines_color.append('k')
+        
+        ###########################
+        # Top line
+        ###########################
+            
+        pts = np.zeros((2,3))
+        
+        pts[0,0] = -10000
+        pts[1,0] = 10000
+        pts[0,1] = self.x_ub[1] + l
+        pts[1,1] = self.x_ub[1] + l
+        
+        lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('k')
+
+
+        ###########################
+        # obstacles
+        ###########################
+
+        for obs in self.obstacles:
+
+            pts = np.zeros((5,3))
+
+            pts[0,0] = obs[0][0]
+            pts[0,1] = obs[0][1]
+
+            pts[1,0] = obs[0][0]
+            pts[1,1] = obs[1][1]
+
+            pts[2,0] = obs[1][0]
+            pts[2,1] = obs[1][1]
+
+            pts[3,0] = obs[1][0]
+            pts[3,1] = obs[0][1]
+
+            pts[4,0] = obs[0][0]
+            pts[4,1] = obs[0][1]
+
+            lines_pts.append( pts )
+            lines_style.append('-')
+            lines_color.append('k')
+            
+        return lines_pts , lines_style , lines_color
+    
+    
+    ###########################################################################
+    def forward_kinematic_lines_plus(self, x , u , t ):
+        """ 
+        plots the force vector
+        
+        """
+        
+        lines_pts = [] # list of array (n_pts x 3) for each lines
+        lines_style = []
+        lines_color = []
+        
+        # force arrow
+        pts      = np.zeros(( 5 , 3 ))
+        
+        f  = u[0] # force amplitude
+        xf = x[2] # base of force x coordinate
+        yf = x[1] # base of force y coordinate
+        
+        d = self.width / 5.0
+        
+        pts[0,:] =  np.array([ xf       , yf           , 0 ])
+        pts[1,:] =  np.array([ xf       , yf + f       , 0 ])
+        pts[2,:] =  np.array([ xf + d*f , yf + f - d*f , 0 ])
+        pts[3,:] =  np.array([ xf       , yf + f       , 0 ])
+        pts[4,:] =  np.array([ xf - d*f , yf + f - d*f , 0 ])
+        
+        lines_pts.append( pts )
+        lines_style.append( '-')
+        lines_color.append( 'r')
                 
         return lines_pts , lines_style , lines_color
     

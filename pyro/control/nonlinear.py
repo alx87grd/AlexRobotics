@@ -47,7 +47,7 @@ class ComputedTorqueController( controller.StaticController ) :
         self.m = model.m
         self.p = model.p
         
-        super().__init__(self.k, self.m, self.p)
+        controller.StaticController.__init__(self, self.k, self.m, self.p)
         
         # Label
         self.name = 'Computed Torque Controller'
@@ -98,8 +98,8 @@ class ComputedTorqueController( controller.StaticController ) :
         """
         [ q , dq ]     = self.model.x2q( x )  
         
-        ddq_d          =   np.zeros( self.model.dof )
-        dq_d           =   np.zeros( self.model.dof )
+        ddq_d          = np.zeros( self.model.dof )
+        dq_d           = np.zeros( self.model.dof )
 
         ddq_r          = self.compute_ddq_r( ddq_d , dq_d , q_d , dq , q )
         
@@ -224,7 +224,7 @@ class SlidingModeController( ComputedTorqueController ):
     def __init__( self , model , traj = None ):
         """ """
         
-        super().__init__( model , traj )
+        ComputedTorqueController.__init__( self, model , traj )
         
         # Params
         self.lam  = 1   # Sliding surface slope

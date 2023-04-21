@@ -38,7 +38,7 @@ class LongitudinalFrontWheelDriveCarWithWheelSlipInput( system.ContinuousDynamic
         self.p = 2
         
         # initialize standard params
-        super().__init__(self.n, self.m, self.p)
+        system.ContinuousDynamicSystem.__init__( self, self.n, self.m, self.p)
         
         # Labels
         self.name = 'Front Wheel Drive Car'
