@@ -10,8 +10,9 @@ Created on Sun Oct  3 05:43:08 2021
 import numpy as np
 import matplotlib.pyplot as plt
 ###############################################################################
-from pyro.dynamic import system
-from pyro.dynamic import mechanical
+from pyro.dynamic   import mechanical
+from pyro.kinematic import geometry
+from pyro.kinematic import drawing
 ###############################################################################
 
 
@@ -31,7 +32,7 @@ class Rocket( mechanical.MechanicalSystemWithPositionInputs ):
         """ """
         
         # initialize standard params
-        super().__init__( 3 , 1 , 1 )
+        mechanical.MechanicalSystemWithPositionInputs.__init__( self, 3 , 1 , 1 )
         
         # Labels
         self.name = '2D rocket model'
@@ -62,6 +63,24 @@ class Rocket( mechanical.MechanicalSystemWithPositionInputs ):
         # Graphic output parameters 
         self.dynamic_domain  = True
         self.dynamic_range   = 10
+        
+        # rocket drawing
+        pts = np.zeros(( 10 , 3 ))
+        l   = self.height
+        w   = self.width
+        
+        pts[0,:] = np.array([ 0, -l,0])
+        pts[1,:] = np.array([-w, -l,0])
+        pts[2,:] = np.array([-w, +l,0])
+        pts[3,:] = np.array([ 0,l+w,0])
+        pts[4,:] = np.array([+w, +l,0])
+        pts[5,:] = np.array([+w, -l,0])
+        pts[6,:] = pts[0,:]
+        pts[7,:] = pts[0,:] + np.array([-w,-w,0])
+        pts[8,:] = pts[0,:] + np.array([+w,-w,0])
+        pts[9,:] = pts[0,:]
+        
+        self.drawing_body_pts = pts
         
         
     ###########################################################################
@@ -111,9 +130,8 @@ class Rocket( mechanical.MechanicalSystemWithPositionInputs ):
         
         delta = u[1]
         
-        # TODO PLACE HOLDER
         B[0,0] = -np.sin( q[2] + delta )
-        B[1,0] = np.cos( q[2] + delta)
+        B[1,0] =  np.cos( q[2] + delta)
         B[2,0] = - self.ycg * np.sin( delta )
         
         return B
@@ -133,7 +151,7 @@ class Rocket( mechanical.MechanicalSystemWithPositionInputs ):
     
         
     ###########################################################################
-    def d(self, q , dq ):
+    def d(self, q , dq , u ):
         """ 
         State-dependent dissipative forces : dof x 1
         """
@@ -207,32 +225,21 @@ class Rocket( mechanical.MechanicalSystemWithPositionInputs ):
         #  body
         ###########################
         
-        x = q[0]
-        y = q[1]
-        s = np.sin(q[2])
-        c = np.cos(q[2])
-        l = self.height
-        w = self.width
+        x     = q[0]
+        y     = q[1]
+        theta = q[2]
         
-        pts      = np.zeros(( 10 , 3 ))
-        pts[0,:] = np.array([x+l*s,y-l*c,0])
-        pts[1,:] = pts[0,:] + np.array([-w*c,-w*s,0])
-        pts[2,:] = pts[1,:] + np.array([-2*l*s,2*l*c,0])
-        pts[3,:] = np.array([x-(l+w)*s,y+(l+w)*c,0])
-        pts[4,:] = np.array([x-l*s+w*c,y+l*c+w*s,0])
-        pts[5,:] = pts[4,:] + np.array([2*l*s,-2*l*c,0])
-        pts[6,:] = pts[0,:]
-        pts[7,:] = pts[0,:] + np.array([w*s-w*c,-w*c-w*s,0])
-        pts[8,:] = pts[0,:] + np.array([w*s+w*c,-w*c+w*s,0])
-        pts[9,:] = pts[0,:]
+        W_T_B    = geometry.transformation_matrix_2D( theta , x , y )
         
-        
-        lines_pts.append( pts )
+        pts_B    = self.drawing_body_pts
+        pts_W    = drawing.transform_points_2D( W_T_B , pts_B )
+
+        lines_pts.append( pts_W )
         lines_style.append( '-')
         lines_color.append( 'b' )
         
         ###########################
-        #  cg
+        #  C.G.
         ###########################
         
         pts      = np.zeros(( 1 , 3 ))
@@ -258,32 +265,18 @@ class Rocket( mechanical.MechanicalSystemWithPositionInputs ):
         lines_color = []
         
         ###########################
-        # trust force vectors
+        # trust force vector
         ###########################
         
-        l = self.height
+        length   = u[0] * 0.0002       # arrow length
+        theta    = u[1] - 0.5 * np.pi  # arrow angle (body frame)
+        y_offset = -self.height - self.width
         
-        s = np.sin(x[2])
-        c = np.cos(x[2])
+        pts_body = drawing.arrow_from_length_angle( length, theta, y = y_offset )
+        W_T_B    = geometry.transformation_matrix_2D( x[2], x[0] , x[1] )
+        pts_W    = drawing.transform_points_2D( W_T_B , pts_body )
         
-        
-        xb = x[0]+l*s
-        yb = x[1]-l*c
-        
-        s = np.sin(x[2]+u[1])
-        c = np.cos(x[2]+u[1])
-        
-        T = u[0] * 0.0002
-        h = self.width
-        
-        pts      = np.zeros(( 5 , 3 ))
-        pts[0,:] = np.array([xb,yb,0])
-        pts[1,:] = pts[0,:] + np.array([T*s,-T*c,0])
-        pts[2,:] = pts[1,:] + np.array([h*c-h*s,h*s+h*c,0])
-        pts[3,:] = pts[1,:] 
-        pts[4,:] = pts[1,:] + np.array([-h*c-h*s,-h*s+h*c,0])
-        
-        lines_pts.append( pts )
+        lines_pts.append( pts_W )
         lines_style.append( '-')
         lines_color.append( 'r' )
                 
@@ -306,7 +299,7 @@ if __name__ == "__main__":
     sys.x0[0] = 0
     
     sys.ubar[0] = sys.mass * sys.gravity * 1.1
-    sys.ubar[1] = -0.005
+    sys.ubar[1] = -0.001
     
     sys.plot_trajectory()
     sys.animate_simulation()

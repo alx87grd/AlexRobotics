@@ -11,7 +11,7 @@ Created on Tue Oct 23 20:45:37 2018
 import numpy as np
 ##############################################################################
 from pyro.dynamic import system
-from pyro.dynamic import vehicle
+from pyro.dynamic import vehicle_steering
 ###############################################################################
 
 
@@ -20,7 +20,7 @@ from pyro.dynamic import vehicle
 
 ###############################################################################
         
-class LateralDynamicBicycleModelwithSpeedInput( vehicle.KinematicCarModel ):
+class LateralDynamicBicycleModelwithSpeedInput( vehicle_steering.KinematicCarModel ):
     """ 
     Equations of Motion
     -------------------------

@@ -110,6 +110,23 @@ class StaticController():
         
         return r
     
+    #########################################################################
+    def forward_kinematic_lines_plus( self, x , u , t ):
+        """  
+        Graphical output for the controller
+        -----------------------------------
+        default is nothing
+
+        x,u,t are the state, input and time of the global closed-loop system
+
+        """
+
+        pts = None
+        style = None
+        color = None
+
+        return pts, style, color
+    
     
     #########################################################################
     # No need to overwrite the following functions for child classes
@@ -129,8 +146,8 @@ class StaticController():
         u  : control inputs vector    m x 1
         
         """
-        
-        u = self.c( y , self.rbar , t )
+        r = self.t2r( t )
+        u = self.c( y , r , t )
         
         return u
     
@@ -209,7 +226,7 @@ class StaticController():
         plt.ylabel(yname, fontsize = 5 )
         plt.xlabel(xname, fontsize = 5 )
         
-        im1 = plt.pcolormesh( X , Y , U, shading='gouraud' )
+        im1 = plt.pcolormesh( X , Y , U, shading='gouraud' , cmap = 'bwr')
         
         cbar = plt.colorbar(im1)
         cbar.ax.tick_params(labelsize=5)
@@ -289,6 +306,7 @@ class ClosedLoopSystem( system.ContinuousDynamicSystem ):
         
         # Default State and inputs        
         self.xbar = self.plant.xbar
+        self.tbar = self.plant.tbar
         self.ubar = self.controller.rbar
         
         ################################
@@ -382,6 +400,83 @@ class ClosedLoopSystem( system.ContinuousDynamicSystem ):
         
         return u
     
+
+    ###########################################################################
+    # Place holder graphical output, overload with specific graph output
+    ###########################################################################
+        
+    #############################
+    def xut2q( self, x , u , t ):
+        """ Compute configuration variables ( q vector ) """
+        
+        # Use the plant function
+        q = self.plant.xut2q( x, u, t)
+        
+        return q
+    
+    
+    ###########################################################################
+    def forward_kinematic_domain(self, q ):
+        """ Set the domain range for ploting, can be static or dynamic """
+
+        # Use the plant function
+        domain = self.plant.forward_kinematic_domain( q )
+        
+        return domain
+    
+    
+    ###########################################################################
+    def forward_kinematic_lines(self, q ):
+        """ 
+        Compute points p = [x;y;z] positions given config q 
+        ----------------------------------------------------
+        - points of interest for ploting
+        
+        Outpus:
+        lines_pts = [] : a list of array (n_pts x 3) for each lines
+        
+        """
+
+        lines_pts = self.plant.forward_kinematic_lines( q )
+                
+        return lines_pts
+    
+    
+    ###########################################################################
+    def forward_kinematic_lines_plus(self, x , u , t ):
+        """  
+        Return combined graphical output for the controller and the system
+        """
+
+        # TODO: this is a quick fix, need to be improved
+
+        sys = self.plant.forward_kinematic_lines_plus( x , u , t )
+        ctl = self.controller.forward_kinematic_lines_plus( x , u , t )
+
+        if type(sys) is tuple:
+            lines_pts   = sys[0]
+            lines_style = sys[1]
+            lines_color = sys[2]
+        else:
+            # Legacy graph function to remove eventually
+            lines_pts   = sys
+            lines_style = []
+            lines_color = []
+            for j, line in enumerate(lines_pts):
+                lines_style.append( self.plant.linestyle  )  # default value 
+                lines_color.append( self.plant.linescolor )  # default value 
+        
+        if ctl[0] is not None:
+            lines_pts    = ctl[0] + lines_pts
+            lines_style  = ctl[1] + lines_style
+            lines_color  = ctl[2] + lines_color
+                
+        return lines_pts, lines_style, lines_color
+    
+    #############################################################################
+    #### Updated shortcuts
+    #############################################################################
+    
     
     ###########################################################################
     def plot_phase_plane_closed_loop(self , x_axis = 0 , y_axis = 1 ):
@@ -413,12 +508,14 @@ class ClosedLoopSystem( system.ContinuousDynamicSystem ):
         
         pp.plot_finish()
         
+        pp.phasefig.show()
+        
         return pp
         
     
     #############################
     def compute_trajectory(
-        self, tf=10, n=10001, solver='ode'):
+        self, tf=10, n=10001, solver='solve_ivt'):
         """ 
         Simulation of time evolution of the system
         ------------------------------------------------
@@ -445,7 +542,8 @@ class ClosedLoopSystem( system.ContinuousDynamicSystem ):
     
     ###########################################################################
     def get_animator(self):
-        return self.plant.get_animator()
+
+        return graphical.Animator(self)
     
 
     ###########################################################################
@@ -464,6 +562,36 @@ class ClosedLoopSystem( system.ContinuousDynamicSystem ):
         
         
     ###########################################################################
+    def plot_phase_plane_trajectory(self, x_axis=0, y_axis=1):
+        """
+        Plot a trajectory in the Phase Plane
+        ---------------------------------------------------------------
+        note: will call compute_trajectory if no simulation data is present
+        
+        """
+        
+        # Check is trajectory is already computed
+        if self.traj == None:
+            self.compute_trajectory()
+            
+        traj = self.traj
+        
+        pp = phaseanalysis.PhasePlot( self , x_axis , y_axis )
+        pp.plot()
+
+        plt.plot(traj.x[:,x_axis], traj.x[:,y_axis], 'b-') # path
+        plt.plot([traj.x[0,x_axis]], [traj.x[0,y_axis]], 'ko') # start
+        plt.plot([traj.x[-1,x_axis]], [traj.x[-1,y_axis]], 'rx') # end
+        
+        plt.draw()
+
+        pp.phasefig.tight_layout()
+        
+        plt.draw()
+        plt.show()
+        
+        
+    ###########################################################################
     def plot_phase_plane_trajectory_closed_loop(self, x_axis=0, y_axis=1):
         """ 
         Plot Phase Plane vector field of the system and the trajectory
@@ -475,8 +603,37 @@ class ClosedLoopSystem( system.ContinuousDynamicSystem ):
         
         """
         
-        plotter = self.get_plotter()
-        plotter.phase_plane_trajectory_closed_loop( self.traj, x_axis, y_axis)
+        pp = phaseanalysis.PhasePlot( self , x_axis , y_axis )
+        
+        pp.compute_grid()
+        pp.plot_init()
+        
+        # Closed-loop Behavior
+        pp.color = 'r'
+        pp.compute_vector_field()
+        pp.plot_vector_field()
+        
+        # Open-Loop Behavior
+        pp.f     = self.plant.f
+        pp.ubar  = self.plant.ubar
+        pp.color = 'b'
+        pp.compute_vector_field()
+        pp.plot_vector_field()
+        
+        # Check is trajectory is already computed
+        if self.traj == None:
+            self.compute_trajectory()
+            
+        traj = self.traj
+        
+        plt.plot(traj.x[:,x_axis], traj.x[:,y_axis], 'b-') # path
+        plt.plot([traj.x[0,x_axis]], [traj.x[0,y_axis]], 'ko') # start
+        plt.plot([traj.x[-1,x_axis]], [traj.x[-1,y_axis]], 'rx') # end
+        
+        pp.plot_finish()
+        
+        pp.phasefig.show()
+        
         
         
     ###########################################################################
@@ -619,6 +776,24 @@ class DynamicController( StaticController ):
         u = self.c( self.zbar, y , self.rbar , t )
         
         return u
+    
+
+    #########################################################################
+    def forward_kinematic_lines_plus( self, x, u , t ):
+        """  
+        Graphical output for the controller
+        -----------------------------------
+        default is nothing
+
+        x,u,t are the state, input and time of the global closed-loop system
+
+        """
+
+        pts = None
+        style = None
+        color = None
+
+        return pts, style, color
         
     
     #############################
@@ -657,7 +832,7 @@ class DynamicClosedLoopSystem( ClosedLoopSystem ):
         
         plant.cost_function = None
         
-        super().__init__(plant, controller)
+        ClosedLoopSystem.__init__( self, plant, controller)
 
         # Add extra states that represent system memory
         self.n = self.plant.n + self.controller.l
@@ -814,7 +989,7 @@ class DynamicClosedLoopSystem( ClosedLoopSystem ):
     
     #############################
     def compute_trajectory(
-        self, tf=10, n=10001, solver='ode'):
+        self, tf=10, n=10001, solver='solve_ivt'):
         """ 
         Simulation of time evolution of the system
         ------------------------------------------------

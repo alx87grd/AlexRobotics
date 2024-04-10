@@ -42,7 +42,7 @@ cl_sys = ctl + sys
 
 # Simultation
 cl_sys.x0[0]  = 3.14
-cl_sys.x0[1]  = 0
+cl_sys.x0[1]  = 2.0
 
 cl_sys.state_label[4] = 'H1'
 cl_sys.state_label[5] = 'H2'
@@ -53,5 +53,5 @@ cl_sys.state_label[8] = 'g'
 cl_sys.compute_trajectory(tf=10, n=20001, solver='euler')
 cl_sys.plot_phase_plane_trajectory()
 cl_sys.plot_trajectory('xu')
-cl_sys.plot_internal_states_5()
+cl_sys.plot_internal_controller_states()
 cl_sys.animate_simulation()

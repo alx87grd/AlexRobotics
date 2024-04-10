@@ -38,8 +38,8 @@ class ProportionnalSingleVariableController( controller.StaticController ) :
     """ 
     Simple proportionnal compensator
     ---------------------------------------
-    r  : reference signal_proc vector  k x 1
-    y  : sensor signal_proc vector     k x 1
+    r  : reference signal vector       k x 1
+    y  : sensor signal vector          k x 1
     u  : control inputs vector         k x 1
     t  : time                          1 x 1
     ---------------------------------------
@@ -61,7 +61,7 @@ class ProportionnalSingleVariableController( controller.StaticController ) :
         self.m = k   
         self.p = k
         
-        super().__init__(self.k, self.m, self.p)
+        controller.StaticController.__init__( self, self.k, self.m, self.p)
         
         # Label
         self.name = 'Proportionnal Controller'
@@ -122,10 +122,10 @@ class ProportionalController(controller.StaticController):
         #m = self.K.shape[0]
         #p = self.K.shape[1]
         
-        super().__init__(p, m, p)
+        controller.StaticController.__init__( self, p, m, p)
         
         self.rbar = np.zeros((self.k,))
-        self.name = "%d X %d Proportional Contrller" % self.K.shape
+        self.name = "%d X %d Proportional Controller" % self.K.shape
         
         self.ybar = np.zeros((self.p,))  # feedback offset
         self.ubar = np.zeros((self.m,))  # control input offset
@@ -215,7 +215,7 @@ class PIDController( controller.DynamicController ):
         m = self.KP.shape[0]
         p = self.KP.shape[1]
 
-        super().__init__(k, l, m, p)
+        controller.DynamicController.__init__( self, k, l, m, p)
         
         for i in range(p):
             self.internal_state_label[i] = 'Integral of output ' + str(i)

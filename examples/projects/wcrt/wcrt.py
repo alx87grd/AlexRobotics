@@ -271,4 +271,4 @@ if __name__ == "__main__":
     sys.d3 = 0
     
     sys.x0 = np.array([0.,1.6,0.,0,0,0])
-    sys.animate_simulation( is_3d = True )
+    anim = sys.animate_simulation( is_3d = True )

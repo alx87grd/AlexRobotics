@@ -21,23 +21,22 @@ class SinglePendulumAdaptativeController( controller.DynamicController ):
         self.name = 'Adaptive controller'
 
         # Params
-        self.A = np.zeros(2)
-        self.T=np.eye(2)
-        self.Kd = 1
-        self.lam  = 1   # Sliding surface slope
-        self.nab  = 0.1 # Min convergence rate
+        self.P    = np.eye(2)
+        self.K    = 1
+        self.lam  = 1   # gain
         
         self.model=model
         
         k = model.dof   
         m = model.m
         p = model.p
-        l = 2
+        
+        l = 2 # number of states in the controller
         
         super().__init__(k, l, m, p)
         
         # Init internal states
-        self.z0 = np.array([0.2,0.2])
+        self.z0 = np.array([0.0,0.0])
         
         
         self.internal_state_label = []
@@ -52,83 +51,72 @@ class SinglePendulumAdaptativeController( controller.DynamicController ):
     def adaptative_variables( self , ddq_d , dq_d , q_d , dq , q ):
         """ 
         
-        Given desired trajectory and actual state
+        Compute intermediate variables
         
         """        
-        q_e   = q  -  q_d
-        dq_e  = dq - dq_d
+        q_e   = q_d  - q
+        dq_e  = dq_d - dq
         
         s      = dq_e  + self.lam * q_e
-        dq_r   = dq_d  - self.lam * q_e
-        ddq_r  = ddq_d - self.lam * dq_e
+        dq_r   = dq_d  + self.lam * q_e
+        ddq_r  = ddq_d + self.lam * dq_e
         
-        return [ s , dq_r , ddq_r ]
+        Y_r = np.zeros(2)
+
+        Y_r[0] = ddq_r
+        Y_r[1] = np.sin(q)
         
-        
-    ############################
-    def adaptative_torque( self , Y , s , q , t ):
-        """ 
-        Given actual state, compute torque necessarly to guarantee convergence
-        """
-        u_computed      = np.dot( Y , self.A  )
-        
-        u_discontinuous = self.Kd*s
-        
-        u_tot = u_computed - u_discontinuous
-        
-        return u_tot
+        return [ s , dq_r , ddq_r , Y_r ]
+    
                         
     ############################
-    def b(self, z, x, q_d, t):
-        
-        [ q , dq ]     = self.model.x2q( x ) 
-        
-        ddq_d          =   np.zeros( self.model.dof )
-        dq_d           =   np.zeros( self.model.dof )
-        
-        [ s , dq_r , ddq_r ]  = self.adaptative_variables( ddq_d , dq_d , 
-                                                           q_d , dq , q )
-        
-        Y = np.zeros(2)
-        dz = np.zeros(2)
+    def b(self, a , x , r , t):
+        """
+        adaptation law
 
-        Y[0]=ddq_r
-        Y[1]=np.sin(q)
-        b = Y * s
-        dz=-1*np.dot( self.T , b )
+        """
         
-        return dz
+        [ q , dq ]                  = self.model.x2q( x ) 
+        
+        [ ddq_d , dq_d , q_d ]      = self.get_traj( t , r )
+        
+        [ s , dq_r , ddq_r , Y_r ]  = self.adaptative_variables( ddq_d , dq_d , q_d , dq , q )
+
+        da   = self.P @ Y_r * s
+        
+        return da
+    
     
     ############################
-    def c(self , z , x , q_d , t = 0):
+    def c(self , a , x , r , t = 0):
         """ 
         
-        Given desired fixed goal state and actual state, compute torques
+        control law
         
         """
-        [ q , dq ]     = self.model.x2q( x ) 
+        [ q , dq ]                  = self.model.x2q( x ) 
         
-        ddq_d          =   np.zeros( self.model.dof )
-        dq_d           =   np.zeros( self.model.dof )
+        [ ddq_d , dq_d , q_d ]      = self.get_traj( t , r )
         
-        [ s , dq_r , ddq_r ]  = self.adaptative_variables( ddq_d , dq_d , 
-                                                           q_d , dq , q )
-
-        Y = np.zeros(2)
-        Y[0]=ddq_r
-        Y[1]=np.sin(q)
-        
-        self.A = self.get_z_integral(z)
+        [ s , dq_r , ddq_r , Y_r ]  = self.adaptative_variables( ddq_d , dq_d , q_d , dq , q )
                 
-        u                     = self.adaptative_torque( Y , s  , q , t )
+        u   = Y_r @ a + self.K * s
         
         return u
     
+    
     ############################
-    def get_z_integral(self, z):
-        """ get intergral error internal states """
+    def get_traj(self, t , r ):
+        """  """
         
-        return z[:self.l]
+        ddq_d          =   np.zeros( self.model.dof )
+        dq_d           =   np.zeros( self.model.dof )
+        q_d            =   r
+        
+        return [ ddq_d , dq_d , q_d ] 
+    
+
+
 
 ##############################################################################
         
@@ -294,196 +282,6 @@ class DoublePendulumAdaptativeController(  controller.DynamicController ):
         return u
     
     
-    ############################
-    def get_z_integral(self, z):
-        """ get intergral error internal states """
-        
-        return z[:self.l]
-    
-    
-##############################################################################
-
-class AdaptativeController_WCRT( controller.DynamicController ):
-    """ 
-    Adaptative Controller for fully actuated mechanical systems (single pendulum)
-    """
-    
-    
-    ############################
-    def __init__( self , model , traj = None ):
-        """ """
-        
-        self.name = 'Adaptive controller'
-        
-        # Params
-        self.A = np.zeros(8)
-        self.T=np.eye(8)
-        self.Kd = np.eye(3)
-        self.lam  = 1   # Sliding surface slope
-        self.nab  = 0.1 # Min convergence rate
-        
-        self.model=model
-        
-        k = model.dof   
-        m = model.m
-        p = model.p
-        l = self.A.shape[0]
-        
-        super().__init__(k, l, m, p) 
-        
-        
-    ##############################
-    def trig(self, q ):
-        """ 
-        Compute cos and sin usefull in other computation 
-        ------------------------------------------------
-        
-        """
-        
-        c1  = np.cos( q[0] )
-        s1  = np.sin( q[0] )
-        c2  = np.cos( q[1] )
-        s2  = np.sin( q[1] )
-        c3  = np.cos( q[2] )
-        s3  = np.sin( q[2] )
-        c23 = np.cos( q[2] + q[1] )
-        s23 = np.sin( q[2] + q[1] )
-        
-        return [c1,s1,c2,s2,c3,s3,c23,s23]
-
-        
-    ############################
-    def adaptative_variables( self , ddq_d , dq_d , q_d , dq , q ):
-        """ 
-        
-        Given desired trajectory and actual state
-        
-        """        
-        q_e   = q  -  q_d
-        dq_e  = dq - dq_d
-        
-        s      = dq_e  + self.lam * q_e
-        dq_r   = dq_d  - self.lam * q_e
-        ddq_r  = ddq_d - self.lam * dq_e
-        
-        return [ s , dq_r , ddq_r ]
-        
-        
-    ############################
-    def adaptative_torque( self , Y , s , q , t ):
-        """ 
-        
-        Given actual state, compute torque necessarly to guarantee convergence
-        
-        """
-                
-        u_computed      = np.dot( Y , self.A  )
-        
-        u_discontinuous = np.dot(self.Kd,s)
-        
-        u_tot = u_computed - u_discontinuous
-        
-        return u_tot
-    
-                        
-    ############################
-    def b(self, z, x, q_d, t):
-        
-        [ q , dq ]     = self.model.x2q( x ) 
-        
-        ddq_d          =   np.zeros( self.model.dof )
-        dq_d           =   np.zeros( self.model.dof )
-        
-        [ s , dq_r , ddq_r ]  = self.adaptative_variables( ddq_d , dq_d , 
-                                                           q_d , dq , q )
-        
-        [c1,s1,c2,s2,c3,s3,c23,s23] = self.trig( q )
-        
-        Y = np.zeros((3,8))
-        dz = np.zeros(8)
-        
-        Y[0,0]=ddq_r[0]
-        Y[0,1]=ddq_r[1]*(s2+s2*c3)
-        Y[0,2]=ddq_r[2]*s23
-        Y[0,3]=(dq[2]*s2*s3+dq[1]*c2+dq[1]*c2*c3)*dq_r[1]
-        Y[0,4]=(dq[2]+dq[1])*c23*dq_r[2]
-        Y[0,5]=0
-        Y[0,6]=0
-        Y[0,7]=q[0]
-        Y[1,0]=ddq_r[0]*(s2+s2*c3)
-        Y[1,1]=ddq_r[1]*(1+c3+c3**2)
-        Y[1,2]=ddq_r[2]*(c3+c3**2)
-        Y[1,3]=(dq[2]*(s3+s3*c3))*dq_r[1]
-        Y[1,4]=(dq[2]*(s3+s3*c3)+dq[1]*(s3+s3*c3)+dq[0]*(c2*c3))*dq_r[2]
-        Y[1,5]=c2
-        Y[1,6]=c23
-        Y[1,7]=q[1]
-        Y[2,0]=ddq_r[0]*s23
-        Y[2,1]=ddq_r[1]*(c3+c3**2)
-        Y[2,2]=ddq_r[2]
-        Y[2,3]=(dq[1]*(s3+s3*c3)+dq[1]*c2*c3)*dq_r[1]
-        Y[2,4]=0
-        Y[2,5]=0
-        Y[2,6]=c23
-        Y[2,7]=q[2]
-        
-        b = np.dot(Y.T,s)
-        dz=-1*np.dot( self.T , b )
-            
-        return dz
-    
-    
-    ############################
-    def c( self , z , x , q_d , t = 0 ):
-        """ 
-        
-        Given desired fixed goal state and actual state, compute torques
-        
-        """
-        
-        [ q , dq ]     = self.model.x2q( x )
-        
-        ddq_d          =   np.zeros( self.model.dof )
-        dq_d           =   np.zeros( self.model.dof )
-        
-        [ s , dq_r , ddq_r ]  = self.adaptative_variables( ddq_d , dq_d , 
-                                                           q_d , dq , q )
-        [c1,s1,c2,s2,c3,s3,c23,s23] = self.trig( q )
-        
-        Y = np.zeros((3,8))
-                
-        Y[0,0]=ddq_r[0]
-        Y[0,1]=ddq_r[1]*(s2+s2*c3)
-        Y[0,2]=ddq_r[2]*s23
-        Y[0,3]=(dq[2]*s2*s3+dq[1]*c2+dq[1]*c2*c3)*dq_r[1]
-        Y[0,4]=(dq[2]+dq[1])*c23*dq_r[2]
-        Y[0,5]=0
-        Y[0,6]=0
-        Y[0,7]=q[0]
-        Y[1,0]=ddq_r[0]*(s2+s2*c3)
-        Y[1,1]=ddq_r[1]*(1+c3+c3**2)
-        Y[1,2]=ddq_r[2]*(c3+c3**2)
-        Y[1,3]=(dq[2]*(s3+s3*c3))*dq_r[1]
-        Y[1,4]=(dq[2]*(s3+s3*c3)+dq[1]*(s3+s3*c3)+dq[0]*(c2*c3))*dq_r[2]
-        Y[1,5]=c2
-        Y[1,6]=c23
-        Y[1,7]=q[1]
-        Y[2,0]=ddq_r[0]*s23
-        Y[2,1]=ddq_r[1]*(c3+c3**2)
-        Y[2,2]=ddq_r[2]
-        Y[2,3]=(dq[1]*(s3+s3*c3)+dq[1]*c2*c3)*dq_r[1]
-        Y[2,4]=0
-        Y[2,5]=0
-        Y[2,6]=c23
-        Y[2,7]=q[2]
-        
-        self.A =self.get_z_integral( z )
-                         
-        u                     = self.adaptative_torque( Y , s  , q , t )
-        
-        return u
-    
-
     ############################
     def get_z_integral(self, z):
         """ get intergral error internal states """

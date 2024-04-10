@@ -35,7 +35,7 @@ class Drone2D( mechanical.MechanicalSystem ):
         actuators = 2
         
         # initialize standard params
-        super().__init__( dof, actuators )
+        mechanical.MechanicalSystem.__init__( self, dof, actuators )
         
         # Labels
         self.name = '2D drone model'
@@ -292,6 +292,496 @@ class Drone2D( mechanical.MechanicalSystem ):
                 
         return lines_pts , lines_style , lines_color
     
+  
+
+###############################################################################
+        
+class SpeedControlledDrone2D( system.ContinuousDynamicSystem ):
+    
+    def __init__(self):
+        
+        # initialize standard params
+        system.ContinuousDynamicSystem.__init__( self, 2, 2, 2)
+        
+        # Labels
+        self.name = 'Speed controlled planar drone'
+        self.state_label = ['x','y']
+        self.input_label = ['vx', 'vy']
+        self.output_label = self.state_label
+        
+        # Units
+        self.state_units = ['[m]','[m]']
+        self.input_units = ['[m/sec]', '[m/sec]']
+        self.output_units = self.state_units
+        
+        # State working range
+        self.x_ub = np.array([+5,+2])
+        self.x_lb = np.array([-5,-2])
+        
+        # Kinematic param
+        self.width  = 1
+        self.height = 0.2
+        
+        # Graphic output parameters 
+        self.dynamic_domain  = True
+        self.dynamic_range   = 10
+        
+        # Point Obstacles
+        self.obstacles = np.array([[ 0.  , 20. ] ,
+                                   [ 0.  , 25. ] ,
+                                   [ 0.  , 30. ] ,
+                                   [ 5.  , 20. ] ,
+                                   [ 5.  , 25. ] ,
+                                   [ 5.  , 30. ] ,
+                                   [ 10. , 20. ] ,
+                                   [ 10. , 25. ] ,
+                                   [ 10. , 30. ] ,
+                                   [ 2.5 , 35  ] ,
+                                   [ 7.5 , 35  ] ] )
+        
+        self.is_vectorized = True
+        
+    ###########################################################################
+    def f(self, x , u , t = 0 ):
+        """ 
+        Continuous time foward dynamics evaluation
+        
+        dx = f(x,u,t)
+        
+        INPUTS
+        x  : state vector             n x 1
+        u  : control inputs vector    m x 1
+        t  : time                     1 x 1
+        
+        OUPUTS
+        dx : state derivative vectror n x 1
+        
+        """
+        
+        dx = u       
+        
+        return dx
+    
+    
+    ###########################################################################
+    def forward_kinematic_domain(self, q ):
+        """ 
+        """
+        l = self.width * 10
+        
+        x = q[0]
+        y = q[1]
+        z = 0
+        
+        if self.dynamic_domain:
+        
+            domain  = [ ( -l + x , l + x ) ,
+                        ( -l + y , l + y ) ,
+                        ( -l + z , l + z ) ]#  
+        else:
+            
+            domain  = [ ( -l , l ) ,
+                        ( -l , l ) ,
+                        ( -l , l ) ]#
+                
+        return domain
+    
+    
+    ###########################################################################
+    def forward_kinematic_lines(self, q ):
+        """ 
+        Compute points p = [x;y;z] positions given config q 
+        ----------------------------------------------------
+        - points of interest for ploting
+        
+        Outpus:
+        lines_pts = [] : a list of array (n_pts x 3) for each lines
+        
+        """
+        
+        lines_pts = [] # list of array (n_pts x 3) for each lines
+        lines_style = []
+        lines_color = []
+        
+        ###############################
+        # ground line
+        ###############################
+        
+        pts      = np.zeros(( 2 , 3 ))
+        pts[0,:] = np.array([-10,0,0])
+        pts[1,:] = np.array([+10,0,0])
+        
+        lines_pts.append( pts )
+        lines_style.append( '--')
+        lines_color.append( 'k' )
+        
+        ###########################
+        # drone body
+        ###########################
+        
+        x = q[0]
+        y = q[1]
+        s = 0
+        c = 1
+        l = self.width
+        h = self.height
+        
+        pts      = np.zeros(( 4 , 3 ))
+        pts[0,:] = np.array([x+l*c-h*s,y+l*s+h*c,0])
+        pts[1,:] = np.array([x+l*c,y+l*s,0])
+        pts[2,:] = np.array([x-l*c,y-l*s,0])
+        pts[3,:] = np.array([x-l*c-h*s,y-l*s+h*c,0])
+        
+        
+        lines_pts.append( pts )
+        lines_style.append( 'o-')
+        lines_color.append( 'b' )
+        
+        ###########################
+        # drone cg
+        ###########################
+        
+        pts      = np.zeros(( 1 , 3 ))
+        pts[0,:] = np.array([x,y,0])
+        
+        lines_pts.append( pts )
+        lines_style.append( 'o')
+        lines_color.append( 'b' )
+        
+        ###########################
+        # obs
+        ###########################
+        
+        for obs in self.obstacles:
+
+            pts = np.zeros((1,3))
+
+            pts[0,0] = obs[0]
+            pts[0,1] = obs[1]
+
+            lines_pts.append( pts )
+            lines_style.append('o')
+            lines_color.append('k')
+                
+        return lines_pts , lines_style , lines_color
+    
+    
+    ###########################################################################
+    def forward_kinematic_lines_plus(self, x , u , t ):
+        """ 
+        show trust vectors
+        
+        
+        """
+        
+        lines_pts = [] # list of array (n_pts x 3) for each lines
+        lines_style = []
+        lines_color = []
+        
+        ###########################
+        # drone velocity vectors
+        ###########################
+        
+        xcg = x[0]
+        ycg = x[1]
+
+        dx =  u[0]
+        dy =  u[1]
+        
+        v  = np.sqrt( dx ** 2 + dy ** 2)
+        
+        theta = np.arctan2( dy , dx ) - np.pi * 0.5
+        
+        s = np.sin( theta )
+        c = np.cos( theta )
+        l = v * self.width * ( self.u_ub[0] - self.u_lb[0] ) 
+        h = l * 0.25
+        
+        pts      = np.zeros(( 5 , 3 ))
+        pts[0,:] = np.array([xcg,ycg,0])
+        pts[1,:] = np.array([xcg+dx,ycg+dy,0])
+        pts[2,:] = pts[1,:] + np.array([-h*c+h*s,-h*s-h*c,0])
+        pts[3,:] = pts[1,:] 
+        pts[4,:] = pts[1,:] + np.array([h*c+h*s,h*s-h*c,0])
+        
+        lines_pts.append( pts )
+        lines_style.append( '-')
+        lines_color.append( 'r' )
+                
+        return lines_pts , lines_style , lines_color
+  
+
+
+##############################################################################
+# 2D planar drone
+##############################################################################
+    
+    
+##############################################################################
+class ConstantSpeedHelicopterTunnel( system.ContinuousDynamicSystem ):
+    """ 
+
+    """
+    
+    ############################
+    def __init__(self):
+        """ """
+    
+        # Dimensions
+        self.n = 3   
+        self.m = 1   
+        self.p = 3
+        
+        # initialize standard params
+        system.ContinuousDynamicSystem.__init__(self, self.n, self.m, self.p)
+        
+        # Labels
+        self.name = 'Helicopter in a tunnel'
+        self.state_label = ['dy','y','x']
+        self.input_label = ['f']
+        self.output_label = self.state_label
+        
+        # Units
+        self.state_units = ['[m/sec]','[m]','[m]']
+        self.input_units = ['[N]']
+        self.output_units = self.state_units
+        
+        # State working range
+        self.x_ub = np.array([+10,+10,+20])
+        self.x_lb = np.array([-10,  0,+0])
+        
+        # Model param
+        self.mass  = 1
+        self.vx    = 10
+        self.width = 1.0
+        
+        # Graphic output parameters 
+        self.dynamic_domain  = True
+        self.dynamic_range   = 12
+        
+        # Obstacles
+        self.obstacles = [
+                [ (2,2),(4,4)],
+                [ (8,5),(10,8)],
+                [ (14,0),(16,4)]
+                ]
+
+    #############################
+    def isavalidstate(self , x ):
+        """ check if x is in the state domain """
+
+        ans = False
+
+        for i in range(self.n):
+            ans = ans or ( x[i] < self.x_lb[i] )
+            ans = ans or ( x[i] > self.x_ub[i] )
+
+        for obs in self.obstacles:
+            on_obs = (( ( x[2] + self.width ) > obs[0][0]) and
+                      ( ( x[1] + self.width ) > obs[0][1]) and
+                      ( ( x[2] - self.width ) < obs[1][0]) and
+                      ( ( x[1] - self.width ) < obs[1][1]) )
+
+            ans = ans or on_obs
+
+        return not(ans)
+        
+
+    #############################
+    def f(self, x = np.zeros(3) , u = np.zeros(1) , t = 0 ):
+        """ 
+        Continuous time foward dynamics evaluation
+        
+        dx = f(x,u,t)
+        
+        INPUTS
+        x  : state vector             n x 1
+        u  : control inputs vector    m x 1
+        t  : time                     1 x 1
+        
+        OUPUTS
+        dx : state derivative vectror n x 1
+        
+        """
+        
+        dx = np.zeros(self.n) # State derivative vector
+        
+        dx[0] = 1./self.mass * u[0]
+        dx[1] = x[0]
+        dx[2] = self.vx
+        
+        return dx
+    
+    
+    ###########################################################################
+    # For graphical output
+    ###########################################################################
+    
+    
+    #############################
+    def xut2q( self, x , u , t ):
+        """ compute config q """
+        
+        q   = np.array([x[2],x[1]])
+        
+        return q
+    
+    
+    ###########################################################################
+    def forward_kinematic_domain(self, q ):
+        """ 
+        """
+        l = self.dynamic_range
+        
+        x = q[0]
+        y = q[1]
+        z = 0
+        
+        if self.dynamic_domain:
+        
+            domain  = [ ( -l + x , l + x ) ,
+                        ( -l + y , l + y ) ,
+                        ( -l + z , l + z ) ]#  
+        else:
+            
+            domain  = [ ( -l , l ) ,
+                        ( -l , l ) ,
+                        ( -l , l ) ]#
+            
+                
+        return domain
+    
+    
+    ###########################################################################
+    def forward_kinematic_lines(self, q ):
+        """ 
+        Compute points p = [x;y;z] positions given config q 
+        ----------------------------------------------------
+        - points of interest for ploting
+        
+        Outpus:
+        lines_pts = [] : a list of array (n_pts x 3) for each lines
+        
+        """
+        
+        lines_pts   = [] # list of array (n_pts x 3) for each lines
+        lines_style = []
+        lines_color = []
+        
+        
+        ###########################
+        # Vehicule
+        ###########################
+        
+        pts      = np.zeros(( 5 , 3 ))
+        
+        l = self.width
+        
+        xyz = np.array([ q[0] , q[1] , 0 ])
+        
+        pts[0,:] =  np.array([-l,+l,0]) + xyz
+        pts[1,:] =  np.array([+l,+l,0]) + xyz
+        pts[2,:] =  np.array([+l,-l,0]) + xyz
+        pts[3,:] =  np.array([-l,-l,0]) + xyz
+        pts[4,:] =  pts[0,:]
+        
+        lines_pts.append( pts )
+        lines_style.append( '-')
+        lines_color.append( 'b')
+        
+        ###########################
+        # bottom line
+        ###########################
+        
+        pts = np.zeros((2,3))
+        
+        pts[0,0] = -10000
+        pts[1,0] = 10000
+        pts[0,1] = self.x_lb[1] -l
+        pts[1,1] = self.x_lb[1] -l
+        
+        lines_pts.append( pts )
+        lines_style.append('--')
+        lines_color.append('k')
+        
+        ###########################
+        # Top line
+        ###########################
+            
+        pts = np.zeros((2,3))
+        
+        pts[0,0] = -10000
+        pts[1,0] = 10000
+        pts[0,1] = self.x_ub[1] + l
+        pts[1,1] = self.x_ub[1] + l
+        
+        lines_pts.append( pts )
+        lines_style.append('-')
+        lines_color.append('k')
+
+
+        ###########################
+        # obstacles
+        ###########################
+
+        for obs in self.obstacles:
+
+            pts = np.zeros((5,3))
+
+            pts[0,0] = obs[0][0]
+            pts[0,1] = obs[0][1]
+
+            pts[1,0] = obs[0][0]
+            pts[1,1] = obs[1][1]
+
+            pts[2,0] = obs[1][0]
+            pts[2,1] = obs[1][1]
+
+            pts[3,0] = obs[1][0]
+            pts[3,1] = obs[0][1]
+
+            pts[4,0] = obs[0][0]
+            pts[4,1] = obs[0][1]
+
+            lines_pts.append( pts )
+            lines_style.append('-')
+            lines_color.append('k')
+            
+        return lines_pts , lines_style , lines_color
+    
+    
+    ###########################################################################
+    def forward_kinematic_lines_plus(self, x , u , t ):
+        """ 
+        plots the force vector
+        
+        """
+        
+        lines_pts = [] # list of array (n_pts x 3) for each lines
+        lines_style = []
+        lines_color = []
+        
+        # force arrow
+        pts      = np.zeros(( 5 , 3 ))
+        
+        f  = u[0] # force amplitude
+        xf = x[2] # base of force x coordinate
+        yf = x[1] # base of force y coordinate
+        
+        d = self.width / 5.0
+        
+        pts[0,:] =  np.array([ xf       , yf           , 0 ])
+        pts[1,:] =  np.array([ xf       , yf + f       , 0 ])
+        pts[2,:] =  np.array([ xf + d*f , yf + f - d*f , 0 ])
+        pts[3,:] =  np.array([ xf       , yf + f       , 0 ])
+        pts[4,:] =  np.array([ xf - d*f , yf + f - d*f , 0 ])
+        
+        lines_pts.append( pts )
+        lines_style.append( '-')
+        lines_color.append( 'r')
+                
+        return lines_pts , lines_style , lines_color
+    
     
     
 '''
@@ -304,12 +794,29 @@ class Drone2D( mechanical.MechanicalSystem ):
 if __name__ == "__main__":     
     """ MAIN TEST """
     
-    sys = Drone2D()
+    #sys = Drone2D()
     
-    sys.x0[5] = 0
+    if True:
     
-    sys.ubar[0] = 9.81 * 0.6
-    sys.ubar[1] = 9.81 * 0.7
-    
-    sys.plot_trajectory()
-    sys.animate_simulation()
+        sys = Drone2D()
+        
+        sys.x0[5] = 0
+        
+        sys.ubar[0] = 9.81 * 0.6
+        sys.ubar[1] = 9.81 * 0.7
+        
+        sys.plot_trajectory()
+        sys.animate_simulation()
+        
+    if False:
+        
+        sys = SpeedControlledDrone2D()
+        
+        sys.x0[0] = 0
+        sys.x0[1] = 0
+        
+        sys.ubar[0] = +0.1
+        sys.ubar[1] = +3.0
+        
+        sys.plot_trajectory()
+        sys.animate_simulation()

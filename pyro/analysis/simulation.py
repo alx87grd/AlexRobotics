@@ -7,7 +7,7 @@ Created on Fri Aug 07 11:51:55 2015
 
 import numpy as np
 
-from scipy.integrate import odeint
+from scipy.integrate import solve_ivp, odeint
 from scipy.interpolate import interp1d
 
 ##########################################################################
@@ -72,6 +72,7 @@ class Trajectory():
     def load(cls, name):
         try:
             # try to load as new format (np.savez)
+            # with np.load(name) as data:
             with np.load(name) as data:
                 return cls(**data)
 
@@ -85,7 +86,7 @@ class Trajectory():
     ############################
     def _compute_size(self):
         
-        #print(self.t)
+        # print(self.t)
         
         self.time_final = self.t.max()
         self.time_steps = self.t.size
@@ -95,10 +96,13 @@ class Trajectory():
         
         self.ubar = np.zeros( self.m )
 
-        # Check consistency between signals
-        for arr in [self.x, self.y, self.u, self.dx, self.r, self.J, self.dJ]:
-            if (arr is not None) and (arr.shape[0] != self.time_steps):
-                raise ValueError("Result arrays must have same length along axis 0")
+        # # Check consistency between signals
+        # for arr in [self.x, self.y, self.u, self.dx, self.r, self.J, self.dJ]:
+            
+        #     if arr is not None:
+                
+        #         if arr.shape[0] != self.time_steps:
+        #             raise ValueError("Result arrays must have same length along axis 0")
                 
 
     ############################
@@ -217,37 +221,115 @@ class Simulator:
     tf     : float : final time for simulation
     n      : int   : number of time steps
     solver : {'ode', 'euler'}
+        If ode, uses `scipy.integrate.solve_ivp`. `euler` uses built-in
+        solver based on the Euler method.
     """
-    
+
     ############################
     def __init__(
-        self, ContinuousDynamicSystem, tf=10, n=10001, solver='ode'):
+        self, ContinuousDynamicSystem, tf=10, n=10001, solver='solve_ivt' ):
 
         self.cds    = ContinuousDynamicSystem
         self.t0     = 0
         self.tf     = tf
-        self.n      = int(n)
-        self.dt     = ( tf + 0.0 - self.t0 ) / ( n - 1 )
+        self.n      = n
         self.solver = solver
         self.x0     = self.cds.x0
         self.cf     = self.cds.cost_function 
-        
+
         # Check Initial condition state-vector
         if self.x0.size != self.cds.n:
             raise ValueError(
                 "Number of elements in x0 must be equal to number of states"
             )
-            
+
 
     ##############################
-    def compute(self):
-        """ Integrate trought time """
+    def compute(self, **solver_args ):
+        """
+        Integrate trough time the equation of motion
 
-        t  = np.linspace( self.t0 , self.tf , self.n )
+        Parameters
+        -----------
+        kwargs: Keyword arguments passed through to the solver (e.g. solve_ivp)
+        
+        """
+        
+        ##############################
+        if self.solver == 'solve_ivt':
+            
+            if self.n is not None:
+                t_eval = np.linspace(self.t0 , self.tf , int(self.n))
+            else:
+                t_eval = None
+                
+            # solve_ivp takes arguments in reverse order of fsim
+            def solverfun(t, y):
+                dy = self.cds.fsim(y, t)
+                return dy
 
-        if self.solver == 'ode':
+            sol = solve_ivp(
+                solverfun,
+                t_span    = [self.t0, self.tf],
+                y0        = self.x0,
+                t_eval    = t_eval,
+                **solver_args
+            )
 
-            x_sol = odeint( self.cds.fsim , self.x0 , t)
+            # Compute inputs-output values
+            t_sol = sol.t
+            n_sol = t_sol.shape[0]
+            x_sol = sol.y.transpose()
+            y_sol  = np.zeros((n_sol, self.cds.p ))
+            u_sol  = np.zeros((n_sol, self.cds.m))
+            dx_sol = np.zeros((n_sol, self.cds.n))
+
+            for i in range(n_sol):
+                ti = t_sol[i]
+                xi = x_sol[i, :]
+                ui = self.cds.t2u( ti )
+
+                dx_sol[i,:] = self.cds.f( xi , ui , ti )
+                y_sol[i,:]  = self.cds.h( xi , ui , ti )
+                u_sol[i,:]  = ui
+                
+        
+        ##############################
+        elif self.solver == 'euler':
+            
+            npts = 10001 if self.n is None else int(self.n)
+            
+            t_sol  = np.linspace(self.t0 , self.tf , npts)
+            x_sol  = np.zeros((npts, self.cds.n))
+            dx_sol = np.zeros((npts, self.cds.n))
+            u_sol  = np.zeros((npts, self.cds.m))
+            y_sol  = np.zeros((npts, self.cds.p))
+
+            # Initial State
+            x_sol[0,:] = self.x0
+            
+            dt = ( self.tf + 0.0 - self.t0 ) / ( npts - 1 )
+            
+            for i in range(npts):
+
+                ti = t_sol[i]
+                xi = x_sol[i,:]
+                ui = self.cds.t2u( ti )
+
+                if i+1 < npts:
+                    dx_sol[i]    = self.cds.f( xi , ui , ti )
+                    x_sol[i+1,:] = dx_sol[i] * dt + xi
+
+                y_sol[i,:] = self.cds.h( xi , ui , ti )
+                u_sol[i,:] = ui
+                
+        ##############################
+        elif self.solver == 'odeint':
+            
+            npts = 10001 if self.n is None else int(self.n)
+            
+            t_sol = np.linspace(self.t0 , self.tf , npts)
+            x_sol = odeint( self.cds.fsim , self.x0 , t_sol)
 
             # Compute inputs-output values
             y_sol  = np.zeros(( self.n , self.cds.p ))
@@ -255,42 +337,27 @@ class Simulator:
             dx_sol = np.zeros((self.n,self.cds.n))
 
             for i in range(self.n):
-                ti = t[i]
+                ti = t_sol[i]
                 xi = x_sol[i,:]
                 ui = self.cds.t2u( ti )
 
                 dx_sol[i,:] = self.cds.f( xi , ui , ti )
                 y_sol[i,:]  = self.cds.h( xi , ui , ti )
                 u_sol[i,:]  = ui
-
-        elif self.solver == 'euler':
-
-            x_sol  = np.zeros((self.n,self.cds.n))
-            dx_sol = np.zeros((self.n,self.cds.n))
-            u_sol  = np.zeros((self.n,self.cds.m))
-            y_sol  = np.zeros((self.n,self.cds.p))
-
-            # Initial State
-            x_sol[0,:] = self.x0
-            dt = ( self.tf + 0.0 - self.t0 ) / ( self.n - 1 )
-            for i in range(self.n):
-
-                ti = t[i]
-                xi = x_sol[i,:]
-                ui = self.cds.t2u( ti )
-
-                if i+1<self.n:
-                    dx_sol[i]    = self.cds.f( xi , ui , ti )
-                    x_sol[i+1,:] = dx_sol[i] * dt + xi
-
-                y_sol[i,:] = self.cds.h( xi , ui , ti )
-                u_sol[i,:] = ui
+                
+        ##############################
+        else :
+            
+            # self.solver == ???
+            print('Check the solver argument: self.solver ==???')
+            raise NotImplementedError
+            
                 
         #########################
         traj = Trajectory(
           x = x_sol,
           u = u_sol,
-          t = t,
+          t = t_sol,
           dx= dx_sol,
           y = y_sol
         )
@@ -325,7 +392,7 @@ class CLosedLoopSimulator(Simulator):
     def __init__(self, ClosedLoopSystem, tf=10, n=10001, solver='ode'):
         
         # Mother class init
-        super().__init__(ClosedLoopSystem, tf, n, solver)
+        Simulator.__init__(self, ClosedLoopSystem, tf, n, solver)
         
         # Special cases
         
@@ -358,26 +425,27 @@ class CLosedLoopSimulator(Simulator):
         
 
     ###########################################################################
-    def _compute_control_inputs(self, traj ):
+    def _compute_control_inputs(self, traj):
         """ Compute internal control inputs of the closed-loop system """
 
         r = traj.u.copy() # reference is input of combined sys
-        u = np.zeros((self.n,self.cds.plant.m))
+        npts = traj.t.shape[0]
+        u = np.zeros([npts, self.cds.plant.m])
 
         # Compute internal input
-        for i in range(self.n):
+        for i in range(npts):
 
             ri = r[i,:]
             yi = traj.y[i,:]
             ti = traj.t[i]
 
             ui = self.cds.controller.c( yi , ri , ti )
-            
+
             u[i,:] = ui
 
         return u
-    
-    
+
+
 ###############################################################################
 # Dynamic Closed Loop Simulator
 ###############################################################################
@@ -392,21 +460,22 @@ class DynamicCLosedLoopSimulator( CLosedLoopSimulator ):
         """ Compute internal control inputs of the closed-loop system """
 
         r = traj.u.copy() # reference is input of combined sys
-        u = np.zeros((self.n,self.cds.plant.m))
+        npts = traj.t.shape[0]
+        u = np.zeros([npts ,self.cds.plant.m])
 
         # Compute internal input signal_proc
-        for i in range(self.n):
+        for i in range(npts):
 
             ri = r[i,:]
             yi = traj.y[i,:]
             xi = traj.x[i,:]
             ti = traj.t[i]
-            
+
             # extract internal controller states
             xi,zi = self.cds._split_states( xi ) 
 
             ui = self.cds.controller.c( zi, yi , ri , ti )
-            
+
             u[i,:] = ui
 
         return u

@@ -9,7 +9,7 @@ Created on Fri Nov 16 12:01:07 2018
 import numpy as np
 import matplotlib.pyplot as plt
 ###############################################################################
-from pyro.dynamic import vehicle
+from pyro.dynamic import vehicle_steering
 ###############################################################################
 import advanced_vehicles
 import test_vehicle_controllers
@@ -18,7 +18,7 @@ import test_vehicle_controllers
 # "Fake" controller - Varying inputs (delta, T_f, T_r) throughout time (change in linear.py)
 ctl = test_vehicle_controllers.kinematicInputs()
 # Vehicule dynamical system
-sys = vehicle.KinematicBicyleModel()
+sys = vehicle_steering.KinematicBicyleModel()
 
 # Set default wheel velocity and steering angle
 cl_sys = ctl+sys

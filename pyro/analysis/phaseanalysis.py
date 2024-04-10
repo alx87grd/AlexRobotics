@@ -9,6 +9,8 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
+from pyro.analysis import graphical
+
 # Embed font type in PDF
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype']  = 42
@@ -50,13 +52,13 @@ class PhasePlot:
         
         # Plotting params
         self.color      = 'b'        
-        self.figsize    = (3, 2)
-        self.dpi        = 300
+        self.figsize    = graphical.default_figsize
+        self.dpi        = graphical.default_dpi
         self.linewidth  = 0.005
         self.streamplot = False
         self.arrowstyle = '->'
         self.headlength = 4.5
-        self.fontsize   = 5
+        self.fontsize   = graphical.default_fontsize
         
         
     ###########################################################################

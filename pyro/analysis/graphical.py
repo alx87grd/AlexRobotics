@@ -5,17 +5,48 @@ Created on Thu Nov  8 21:05:55 2018
 @author: Alexandre
 """
 
+import sys as python_system
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import mpl_toolkits.mplot3d.axes3d as p3
+
 
 from pyro.analysis import phaseanalysis
 
-# Embed font type in PDF
+
+###############################################################################
+#  Note: Modify here matplolib setting to fit your environment
+###############################################################################
+
+# Use interactive backend
+try:
+    # Default usage for interactive mode
+    matplotlib.use('Qt5Agg')
+    plt.ion() # Set interactive mode
+    
+except:
+    pass
+
+# Default figure settings
+default_figsize   = (4, 3)
+default_dpi       = 250
+default_linestyle = '-'
+default_fontsize  = 5
+
+# True if running in IPython, False if running the file in terminal
+if hasattr(python_system, 'ps1'): 
+    figure_blocking  = False   # Set to not block the code when showing a figure
+else:
+    # We want to block figure to prevent the script from terminating
+    figure_blocking  = True   # Set to block the code when showing a figure
+        
+# Embed font type in PDF when exporting
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype']  = 42
+    
+    
+    
 
 ###############################################################################
 class TrajectoryPlotter:
@@ -26,9 +57,9 @@ class TrajectoryPlotter:
         self.sys = sys
 
         # Ploting
-        self.fontsize = 5
-        self.figsize  = (4, 3)
-        self.dpi      = 300
+        self.fontsize = default_fontsize
+        self.figsize  = default_figsize
+        self.dpi      = default_dpi 
 
 
     ##########################################################################
@@ -83,6 +114,8 @@ class TrajectoryPlotter:
 
         simfig , plots = plt.subplots(l, sharex=True, figsize=self.figsize,
                                       dpi=self.dpi, frameon=True)
+        
+        lines = [None] * l
 
         #######################################################################
         #Fix bug for single variable plotting
@@ -97,7 +130,7 @@ class TrajectoryPlotter:
         if plot=='All' or plot=='x' or plot=='xu' or plot=='xy' or plot=='xuj':
             # For all states
             for i in range( sys.n ):
-                plots[j].plot( traj.t , traj.x[:,i] , 'b')
+                lines[j] = plots[j].plot( traj.t , traj.x[:,i] , 'b')[0]
                 plots[j].set_ylabel(sys.state_label[i] +'\n'+
                 sys.state_units[i] , fontsize=self.fontsize )
                 plots[j].grid(True)
@@ -107,7 +140,7 @@ class TrajectoryPlotter:
         if plot == 'All' or plot == 'u' or plot == 'xu' or plot == 'xuj':
             # For all inputs
             for i in range( sys.m ):
-                plots[j].plot( traj.t , traj.u[:,i] , 'r')
+                lines[j] = plots[j].plot( traj.t , traj.u[:,i] , 'r')[0]
                 plots[j].set_ylabel(sys.input_label[i] + '\n' +
                 sys.input_units[i] , fontsize=self.fontsize )
                 plots[j].grid(True)
@@ -117,7 +150,7 @@ class TrajectoryPlotter:
         if plot == 'All' or plot == 'y' or plot == 'xy':
             # For all outputs
             for i in range( sys.p ):
-                plots[j].plot( traj.t , traj.y[:,i] , 'k')
+                lines[j] = plots[j].plot( traj.t , traj.y[:,i] , 'k')[0]
                 plots[j].set_ylabel(sys.output_label[i] + '\n' +
                 sys.output_units[i] , fontsize=self.fontsize )
                 plots[j].grid(True)
@@ -126,12 +159,12 @@ class TrajectoryPlotter:
 
         if plot == 'All' or plot == 'j' or plot == 'xuj':
             # Cost function
-            plots[j].plot( traj.t , traj.dJ[:] , 'b')
+            lines[j] = plots[j].plot( traj.t , traj.dJ[:] , 'b')[0]
             plots[j].set_ylabel('dJ', fontsize=self.fontsize )
             plots[j].grid(True)
             plots[j].tick_params( labelsize = self.fontsize )
             j = j + 1
-            plots[j].plot( traj.t , traj.J[:] , 'r')
+            lines[j] = plots[j].plot( traj.t , traj.J[:] , 'r')[0]
             plots[j].set_ylabel('J', fontsize=self.fontsize )
             plots[j].grid(True)
             plots[j].tick_params( labelsize = self.fontsize )
@@ -141,7 +174,7 @@ class TrajectoryPlotter:
             # Internal states
             n = sys.n - sys.controller.l
             for i in range( l ):
-                plots[j].plot( traj.t , traj.x[:,i+n] , 'b')
+                lines[j] = plots[j].plot( traj.t , traj.x[:,i+n] , 'b')[0]
                 plots[j].set_ylabel(sys.state_label[i+n] +'\n'+
                 sys.state_units[i+n] , fontsize=self.fontsize )
                 plots[j].grid(True)
@@ -154,11 +187,82 @@ class TrajectoryPlotter:
 
         simfig.canvas.draw()
         plt.draw()
-        plt.show()
+        plt.show( block = figure_blocking )
 
         self.fig   = simfig
         self.plots = plots
+        self.lines = lines
+        self.l     = l
         
+        return (simfig, plots, lines)
+    
+    ##########################################################################
+    def update_plot(self, traj, plot = 'x'):
+        """
+        Create a figure with trajectories for states, inputs, outputs and cost
+        ----------------------------------------------------------------------
+        plot = 'All'
+        plot = 'xu'
+        plot = 'xy'
+        plot = 'x'
+        plot = 'u'
+        plot = 'y'
+        plot = 'j'
+        plot = 'z'
+        """
+        
+        lines = self.lines
+        sys   = self.sys
+        plots = self.plots
+        
+        j = 0
+        
+        if plot=='All' or plot=='x' or plot=='xu' or plot=='xy' or plot=='xuj':
+            
+            # For all states
+            for i in range( sys.n ):
+                lines[j].set_data( traj.t , traj.x[:,i] )
+                plots[j].relim()
+                plots[j].autoscale_view(True,True,True)
+                j = j + 1
+
+        if plot == 'All' or plot == 'u' or plot == 'xu' or plot == 'xuj':
+            # For all inputs
+            for i in range( sys.m ):
+                lines[j].set_data( traj.t , traj.u[:,i] )
+                plots[j].relim()
+                plots[j].autoscale_view(True,True,True)
+                j = j + 1
+
+        if plot == 'All' or plot == 'y' or plot == 'xy':
+            # For all outputs
+            for i in range( sys.p ):
+                lines[j].set_data( traj.t , traj.y[:,i] )
+                plots[j].relim()
+                plots[j].autoscale_view(True,True,True)
+                j = j + 1
+
+        if plot == 'All' or plot == 'j' or plot == 'xuj':
+            # Cost function
+            lines[j].set_data( traj.t , traj.dJ[:,i] )
+            plots[j].relim()
+            plots[j].autoscale_view(True,True,True)
+            j = j + 1
+            lines[j].set_data( traj.t , traj.J[:,i] )
+            plots[j].relim()
+            plots[j].autoscale_view(True,True,True)
+            j = j + 1
+            
+        if plot == 'z':
+            # Internal states
+            n = sys.n - sys.controller.l
+            for i in range( self.l ):
+                lines[j].set_data( traj.t , traj.x[:,i+n] )
+                plots[j].relim()
+                plots[j].autoscale_view(True,True,True)
+                j = j + 1
+        
+    
     
     ##########################################################################
     def phase_plane_trajectory(self, traj, x_axis=0, y_axis=1):
@@ -175,7 +279,7 @@ class TrajectoryPlotter:
         pp.phasefig.tight_layout()
         
         plt.draw()
-        plt.show()
+        plt.show( block = figure_blocking )
         
 
     ###########################################################################
@@ -210,7 +314,7 @@ class TrajectoryPlotter:
         pp.phasefig.tight_layout()
         
         plt.draw()
-        plt.show()
+        plt.show( block = figure_blocking )
 
 
     ###########################################################################
@@ -245,7 +349,7 @@ class TrajectoryPlotter:
         plt.tight_layout()
         
         plt.draw()
-        plt.show()
+        plt.show( block = figure_blocking )
         
         
         
@@ -284,11 +388,11 @@ class Animator:
         self.x_axis = 0
         self.y_axis = 1
         
-        # Params
-        self.figsize   = (4, 3)
-        self.dpi       = 300
+        # Ploting Param
+        self.fontsize = default_fontsize
+        self.figsize  = default_figsize
+        self.dpi      = default_dpi 
         self.linestyle = sys.linestyle 
-        self.fontsize  = 5
         
         # Label
         self.top_right_label = None
@@ -342,11 +446,11 @@ class Animator:
             x_pts     = pts[:, x_axis ]
             y_pts     = pts[:, y_axis ]
             linestyle = lines_style[j] + lines_color[j]
-            line      = self.showax.plot( x_pts, y_pts, linestyle )
+            line,     = self.showax.plot( x_pts, y_pts, linestyle )
             
             self.showlines.append( line )
 
-        plt.show()
+        plt.show( block = figure_blocking )
     
     
     ###########################################################################
@@ -374,7 +478,7 @@ class Animator:
         self.show3fig = plt.figure(figsize=self.figsize, dpi=self.dpi)
         self.show3fig.canvas.manager.set_window_title('3D Configuration of ' + 
                                             self.sys.name )
-        self.show3ax = self.show3fig.gca(projection='3d')
+        self.show3ax = self.show3fig.add_subplot(projection='3d')
                 
         self.show3lines = []
         
@@ -383,7 +487,7 @@ class Animator:
             y_pts     = pts[:, 1 ]
             z_pts     = pts[:, 2 ]
             linestyle = lines_style[j] + lines_color[j]
-            line      = self.show3ax.plot( x_pts, y_pts, z_pts, linestyle)
+            line,     = self.show3ax.plot( x_pts, y_pts, z_pts, linestyle)
             
             self.show3lines.append( line )
             
@@ -395,7 +499,109 @@ class Animator:
         self.show3ax.set_zlabel('Z')
         self.show3ax.tick_params(axis='both', which='both', labelsize=self.fontsize)
         
-        plt.show()
+        plt.show( block = figure_blocking )
+        
+    ###########################################################################
+    def show_plus(self, x , u , t , x_axis = 0 , y_axis = 1 ):
+        """ Plot figure of system at state x """
+        
+        # Update axis to plot in 2D
+        
+        self.x_axis = x_axis
+        self.y_axis = y_axis
+        
+        # Get data
+        lines_data = self.get_lines(x, u, t)
+            
+        # Save data in lists for the whole trajectory
+        lines_pts        = lines_data[0]  
+        lines_style      = lines_data[1]  
+        lines_color      = lines_data[2]
+        lines_plus_pts   = lines_data[3]
+        lines_plus_style = lines_data[4]
+        lines_plus_color = lines_data[5]
+        domain           = lines_data[6]  
+        
+        # Plot
+        self.showfig = plt.figure(figsize=self.figsize, dpi=self.dpi)
+        self.showfig.canvas.manager.set_window_title('2D plot of ' + 
+                                            self.sys.name )
+        self.showax = self.showfig.add_subplot(111, autoscale_on=False )
+        self.showax.grid()
+        self.showax.axis('equal')
+        self.showax.set_xlim(  domain[x_axis] )
+        self.showax.set_ylim(  domain[y_axis] )
+        self.showax.tick_params(axis='both', which='both', labelsize=self.fontsize)
+        
+        self.showlines      = []
+        self.showlines_plus = []
+        
+        # for each lines
+        for j, line_pts in enumerate( lines_pts ):
+            
+            linestyle = lines_style[j] + lines_color[j]
+            
+            thisx = line_pts[:,self.x_axis]
+            thisy = line_pts[:,self.y_axis]
+            line, = self.showax.plot(thisx, thisy, linestyle)
+
+            self.showfig.tight_layout()
+                
+            self.showlines.append( line )
+            
+        # Lines plus optionnal 
+        if self.sys.lines_plus:
+            
+            for j, line_pts in enumerate( lines_plus_pts ):
+                
+                linestyle = lines_plus_style[j] + lines_plus_color[j]
+                
+                thisx = line_pts[:,self.x_axis]
+                thisy = line_pts[:,self.y_axis]
+                line, = self.showax.plot(thisx, thisy, linestyle)
+                    
+                self.showlines_plus.append( line )
+
+        plt.show( block = figure_blocking )
+        
+    ###########################################################################
+    def show_plus_update(self, x , u , t ):
+        """ Update a show plus figure """
+        
+        # Get data
+        lines_data = self.get_lines(x, u, t)
+            
+        # Line data
+        lines_pts        = lines_data[0]  
+        lines_style      = lines_data[1]  
+        lines_color      = lines_data[2]
+        lines_plus_pts   = lines_data[3]
+        lines_plus_style = lines_data[4]
+        lines_plus_color = lines_data[5]
+        domain           = lines_data[6]  
+        
+        # Update lines
+        for j, line in enumerate(self.showlines):
+            thisx = lines_pts[j][:,self.x_axis]
+            thisy = lines_pts[j][:,self.y_axis]
+            line.set_data(thisx, thisy)
+            
+        if self.sys.lines_plus:
+            # Update lines plus
+            for j, line in enumerate(self.showlines_plus):
+                thisx = lines_plus_pts[j][:,self.x_axis]
+                thisy = lines_plus_pts[j][:,self.y_axis]
+                line.set_data(thisx, thisy)
+            
+        # Update domain
+        i_x = self.x_axis
+        i_y = self.y_axis
+        self.showax.set_xlim( domain[i_x] )
+        self.showax.set_ylim( domain[i_y] )
+        
+        self.showfig.canvas.draw()
+
+        plt.show( block = figure_blocking )
         
         
     ###########################################################################
@@ -500,8 +706,9 @@ class Animator:
         
         
         if is_3d:
-            self.ani_ax = p3.Axes3D(self.ani_fig) #TODO
+            #self.ani_ax = p3.Axes3D(self.ani_fig) #TODO
             #self.ani_fig.add_axes(self.ani_ax)
+            self.ani_ax = self.ani_fig.add_subplot(projection='3d')
             self.ani_ax.set_xlim3d(self.ani_domains[0][0])
             self.ani_ax.set_xlabel('X')
             self.ani_ax.set_ylim3d(self.ani_domains[0][1])
@@ -619,12 +826,15 @@ class Animator:
         if save:
             self.ani.save( file_name + '.gif', writer='imagemagick', fps=30)
 
-        # self.ani_fig.show()
+        # self.ani_fig.show( block = figure_blocking )
         if show:
-            plt.ioff()
-            plt.show()
+            #plt.ioff()
+            plt.show( block = figure_blocking )
+            
         else:
             plt.close(self.ani_fig)
+            
+        return self.ani
         
 
     #####################################    
@@ -701,10 +911,25 @@ if __name__ == "__main__":
     """ MAIN TEST """
     
     from pyro.dynamic import pendulum
-    from pyro.dynamic import vehicle
+    from pyro.dynamic import vehicle_steering
     
     sys    = pendulum.DoublePendulum()
     sys.x0 = np.array([0.1,0.1,0,0])
+    
+    sys.plot_phase_plane(0,2)
+    
+    traj = sys.compute_trajectory( 2.0 )
+    
+    
+    plotter = TrajectoryPlotter( sys )
+    plotter.plot( traj, 'xu' )
+    
+    sys.x0 = np.array([0.2,0.1,0,0])
+    traj2 = sys.compute_trajectory( 2.0  )
+    
+    plotter.update_plot( traj2 )
+    
+    plotter.phase_plane_trajectory( traj2 , 0 , 2 )
 
     is_3d = False
     
@@ -713,7 +938,7 @@ if __name__ == "__main__":
     a = Animator(sys)
     a.animate_simulation( sys.traj, 1, is_3d)
     
-    sys      = vehicle.KinematicBicyleModel()
+    sys      = vehicle_steering.KinematicBicyleModel()
     sys.ubar = np.array([1,0.01])
     sys.x0   = np.array([0,0,0])
     

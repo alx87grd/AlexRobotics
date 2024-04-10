@@ -273,22 +273,34 @@ class MechanicalSystem( system.ContinuousDynamicSystem ):
 
 
 
+###############################################################################
+###
+###############################################################################
+
+
 class MechanicalSystemWithPositionInputs( MechanicalSystem  ):
     """ 
     Mechanical system with Equation of Motion in the form of
     -------------------------------------------------------
-    H(q) ddq + C(q,dq) dq + d(q,dq) + g(q) = B(q,u) e(u)
+    H(q) ddq + C(q,dq) dq + d(q,dq,u) + g(q) = B(q,u) e(u)
     -------------------------------------------------------
     q      :  dim = (dof, 1)   : position variables 
     dq     :  dim = (dof, 1)   : velocity variables     
     ddq    :  dim = (dof, 1)   : acceleration variables
-    e(u)   :  dim = (m, 1)     : force input variables
+    e(u)   :  dim = (m_f, 1)   : force input variables
     H(q)   :  dim = (dof, dof) : inertia matrix
     C(q)   :  dim = (dof, dof) : corriolis matrix
-    B(q,u) :  dim = (dof, m)   : actuator matrix
+    B(q,u) :  dim = (dof, m_f) : actuator matrix
     ddq    :  dim = (dof, 1)   : acceleration variables
     d(q,dq):  dim = (dof, 1)   : state-dependent dissipative forces
     g(q)   :  dim = (dof, 1)   : state-dependent conservatives forces
+    
+    m = m_f + m_o
+    ---------------------------------------------------
+    m      :   integer         : number of inputs
+    m_f    :   integer         : number of force inputs
+    m_o    :   integer         : number of other inputs
+    u      :   dim = ( m , 1)  : vector of all input variables
     
     """
     
@@ -300,11 +312,12 @@ class MechanicalSystemWithPositionInputs( MechanicalSystem  ):
         self.dof = dof
         
         # Nb of actuators
-        self.actuators = force_inputs
+        self.m_f = force_inputs
+        self.m_o = other_inputs
         
         # Dimensions
         n = dof * 2 
-        m = force_inputs + other_inputs 
+        m = self.m_f + self.m_o
         p = dof * 2
         
         # initialize standard params
@@ -325,7 +338,7 @@ class MechanicalSystemWithPositionInputs( MechanicalSystem  ):
             self.x_lb[i+dof] = - np.pi * 2
             self.state_label[i+dof] = 'Velocity ' + str(i)
             self.state_units[i+dof] = '[rad/sec]'
-        for i in range(self.actuators):
+        for i in range(self.m_f):
             self.u_ub[i] = + 5
             self.u_lb[i] = - 5
             self.input_label[i] = 'Force ' + str(i)
@@ -345,25 +358,37 @@ class MechanicalSystemWithPositionInputs( MechanicalSystem  ):
         Actuator Matrix  : dof x m
         """
         
-        B = np.zeros( ( self.dof , self.actuators ) )
+        B = np.zeros( ( self.dof , self.m_f ) )
         
-        for i in range(min(self.actuators,self.dof)):
+        for i in range(min(self.m_f,self.dof)):
             B[i,i] = 1                # Diag matrix for the first m rows
         
         return B
     
     
-    ###########################################################################
-    # No need to overwrite the following functions for custom system
-    ###########################################################################
-    
     #############################
     def u2e( self, u ):
         """  """
         
-        e = u[ 0 : self.actuators ] 
+        e = u[ 0 : self.m_f ] 
         
         return e
+    
+    
+    ###########################################################################
+    def d(self, q , dq , u ):
+        """ 
+        State-dependent dissipative forces : dof x 1
+        """
+        
+        d = np.zeros(self.dof ) # Default is zero vector
+        
+        return d
+    
+    
+    ###########################################################################
+    # No need to overwrite the following functions for custom system
+    ###########################################################################
     
     
     ##############################
@@ -373,7 +398,9 @@ class MechanicalSystemWithPositionInputs( MechanicalSystem  ):
         H = self.H( q )
         C = self.C( q , dq )
         g = self.g( q )
-        d = self.d( q , dq )
+        
+        u = self.ubar
+        d = self.d( q , dq , u )
                 
         # Generalized forces
         forces = np.dot( H , ddq ) + np.dot( C , dq ) + g + d
@@ -395,7 +422,7 @@ class MechanicalSystemWithPositionInputs( MechanicalSystem  ):
         H = self.H( q )
         C = self.C( q , dq )
         g = self.g( q  )
-        d = self.d( q , dq)
+        d = self.d( q , dq, u )
         
         B = self.B( q , u )
         e = self.u2e( u )

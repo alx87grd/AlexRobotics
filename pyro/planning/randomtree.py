@@ -35,19 +35,23 @@ class Node:
         
         
 ###############################################################################
-class RRT:
+class RRT( plan.Planner ):
     """ Rapid Random Trees search algorithm """
     
     ############################
-    def __init__(self, sys , x_start ):
+    def __init__(self, sys , x_start = None , x_goal = None ):
         
-        self.sys = sys          # Dynamic system class
+        # Set sys, default cost function x_start and x_goal
+        plan.Planner.__init__(self, sys)
         
-        # Init tree
-        self.x_start = x_start  # origin of the graph
-        self.start_node = Node( self.x_start , None , 0  , None )
-        self.nodes = []
-        self.nodes.append( self.start_node )
+        # Default x_start is sys.x0
+        if x_start is not None:
+            self.x_start = x_start
+          
+        # Default x_goal is sys.xbar
+        if x_goal is not None:
+            self.x_goal = x_goal
+        
         
         # Params
         self.dt                   = 0.1
@@ -76,9 +80,8 @@ class RRT:
         # Debuging mode
         self.debug = False
         
-        self.discretizeactions()
-        
         # Init
+        self.discretizeactions()
         self.solution_is_found     = False
         self.randomized_input      = False
         
@@ -88,6 +91,12 @@ class RRT:
         """ generate the list of possible control inputs """
         
         self.u_options = [ self.sys.u_lb ,  self.sys.ubar , self.sys.u_ub ]
+        
+        
+    #############################
+    def compute_solution(self, x_goal = None ):
+    
+        self.find_path_to_goal( x_goal )
         
         
     ############################
@@ -104,20 +113,22 @@ class RRT:
         
         return x_random
         
-    ############################
     
+    ############################
     def rand_input(self, x = 0 ):    
         """ Sample a random input """
         
         # random selection
         n_options = len( self.u_options )
-        j         = np.random.randint(0,n_options)
+        j         = np.random.randint( 0 , n_options )
         u         = self.u_options[j]
         
         # if u domain check is active
         if self.test_u_domain :
-            # I new sample is not a valid option
+            
+            # If new sample is not a valid option
             if not( self.sys.isavalidinput( x , u ) ):
+                
                 # Sample again (recursivity)
                 u = self.rand_input( x )
         
@@ -142,6 +153,7 @@ class RRT:
                         closest_node = node
         
         # Else if there is too many nodes to check
+        # TODO: fix this, Implement efficient nearest search?
         else:
             # Check only last X nodes
             for i in range(self.max_distance_compute):
@@ -151,8 +163,7 @@ class RRT:
                     if node.t < self.max_solution_time:
                         min_distance = d
                         closest_node = node
-            
-                
+        
         return closest_node
         
         
@@ -210,6 +221,15 @@ class RRT:
                     
                 
         return new_node
+    
+    
+    ############################
+    def init_tree(self):    
+        """ """
+        # Init Tree
+        self.start_node = Node( self.x_start , None , 0  , None )
+        self.nodes = []
+        self.nodes.append( self.start_node )
         
     
     ############################
@@ -236,30 +256,35 @@ class RRT:
             
         if plot:
             self.plot_tree()
-    
            
         
     ############################
-    def find_path_to_goal(self, x_goal ):
+    def find_path_to_goal(self, x_goal = None ):
         """ """
         
-        self.x_goal  = x_goal
+        # Default x_goal is sys.xbar
+        if x_goal is not None:
+            self.x_goal = x_goal
+            
+        self.init_tree()
         
+        # Variables
         succes   = False
-        
         no_nodes = 0
         
-         # Plot
+        # Plot
         if self.dyna_plot:
             self.dyna_plot_init()
         
+        # Explore the tree
         while not succes:
             
             # Exploration:
             if np.random.rand() > self.alpha :
                 # Try to converge to goal
-                x_random = x_goal
+                x_random = self.x_goal
                 self.randomized_input = False
+                
             else:
                 # Random exploration
                 x_random  = self.rand_state()
@@ -271,15 +296,14 @@ class RRT:
             
             # if a valid neighbor was found
             if not node_near == None:
-                new_node  = self.select_control_input( x_random , 
-                                                       node_near )
+                new_node  = self.select_control_input( x_random , node_near )
                 
                 # if there is a valid control input
                 if not new_node == None:
                     self.nodes.append( new_node )
             
                     # Distance to goal
-                    d = new_node.distanceTo( x_goal )
+                    d = new_node.distanceTo( self.x_goal )
                     
                     no_nodes = no_nodes + 1
                     
@@ -321,7 +345,7 @@ class RRT:
               '\n-----------------------------------------------')
         
         # Compute Path
-        self.compute_path_to_goal()
+        self.path_to_traj()
         
         # Plot
         if self.dyna_plot:
@@ -329,8 +353,11 @@ class RRT:
         
                 
     ############################
-    def compute_path_to_goal(self):
-        """ """
+    def path_to_traj(self):
+        """ 
+        Extract the solution in the form of a trajectory
+        
+        """
         
         node = self.goal_node
         
@@ -375,12 +402,11 @@ class RRT:
         dx = np.array( dx_list ).T
         dx = np.fliplr( dx )
             
-        # Save plan
-        # y = x
-        self.trajectory = simulation.Trajectory(x.T, u.T, t.T, dx.T, x.T)
+        # Save solution
+        self.traj = simulation.Trajectory(x.T, u.T, t.T, dx.T, x.T)
         
         # Create open-loop controller
-        self.open_loop_controller = plan.OpenLoopController( self.trajectory )
+        self.open_loop_controller = plan.OpenLoopController( self.traj )
         
         #
         self.solution_is_found = True
@@ -391,36 +417,14 @@ class RRT:
         """ Fc = cutoff freq in Hz """
         
         #Memorize original raw trajectory plan
-        self.raw_trajectory_solution = self.trajectory 
+        self.raw_trajectory_solution = self.traj
         
         tf = filters.TrajectoryFilter( fc , self.dt )
         
         # Low pass filter
-        filtered_traj = tf.low_pass_filter_traj( self.trajectory )
+        filtered_traj = tf.low_pass_filter_traj( self.traj)
         
-        self.trajectory = filtered_traj
-        
-
-
-    ############################
-    def save_solution(self, name = 'RRT_Solution.npy' ):
-        
-        self.trajectory.save( name )
-        
-    ############################
-    def load_solution(self, name = 'RRT_Solution.npy' ):
-
-        self.trajectory = simulation.Trajectory.load(name)
-
-    ############################
-    def plot_open_loop_solution(self, params = 'xu' ):
-
-        self.sys.get_plotter().plot( self.trajectory, params)
-        
-    ############################
-    def animate_solution(self, speed_factor = 1.0 ):
-
-        self.sys.get_animator().animate_simulation( self.trajectory, speed_factor, self.sys.is_3d )
+        self.traj = filtered_traj
 
 
     ##################################################################
@@ -494,7 +498,7 @@ class RRT:
                                             self.sys.name )
         
         # Create Axe
-        ax = self.fig_tree_3d.gca( projection='3d' )
+        ax = self.fig_tree_3d.add_subplot(projection='3d')
         
         # Plot Tree
         for node in self.nodes:
@@ -636,8 +640,6 @@ class RRT:
             
             
 
-
-
 '''
 #################################################################
 ##################          Main                         ########
@@ -653,10 +655,12 @@ if __name__ == "__main__":
 
     sys  = pendulum.SinglePendulum()
     
-    x_start = np.array([0.1,0])
-    x_goal  = np.array([-3.14,0])
     
-    planner = RRT( sys , x_start )
+    
+    planner = RRT( sys )
+    
+    planner.x_start = np.array([ 0.1   , 0 ])
+    planner.x_goal  = np.array([ -3.14 , 0 ])
     
     planner.u_options = [
             np.array([-5]),
@@ -668,16 +672,16 @@ if __name__ == "__main__":
             np.array([ 5])
             ]
     
-    planner.goal_radius = 0.8
+    planner.goal_radius = 0.6
     planner.alpha = 0.99
-    planner.find_path_to_goal( x_goal )
+    
+    
+    planner.compute_solution()
     
     planner.plot_tree()
-    planner.plot_open_loop_solution()
+    planner.show_solution()
     planner.low_pass_solution( 3 )
-    planner.plot_open_loop_solution()
-    
+    planner.show_solution()
     planner.z_axis = 0
     planner.plot_tree_3d()
-    
     planner.animate_solution()

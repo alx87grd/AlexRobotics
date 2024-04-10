@@ -12,18 +12,34 @@ from adaptive_computed_torque import SinglePendulumAdaptativeController
 ###############################################################################
 
 sys = pendulum.SinglePendulum()
-sys.cost_function = None
+
+
+sys.m1       = 3
+sys.l1       = 2
+sys.lc1      = 1
+sys.I1       = 0
+sys.gravity  = 9.81 
+
+
+# Controller
+
 ctl = SinglePendulumAdaptativeController(sys)
 
-sys.m1 = 1
+# Sys ID initial guess
+m1_hat = 1
+l1_hat = 1
 
-ctl.z0[0] = 8
-ctl.z0[1] = 15
+ctl.z0[0] = m1_hat * l1_hat ** 2
+ctl.z0[1] = m1_hat * l1_hat * 9.81
 
-ctl.Kd = 1
-ctl.lam = 1
-ctl.T[0,0] = 10
-ctl.T[1,1] = 10
+# Controller Param
+
+ctl.K      = 1
+ctl.lam    = 1
+ctl.P[0,0] = 10
+ctl.P[1,1] = 10
+
+
 # Set Point
 q_target = np.array([3.14])
 ctl.rbar = q_target
@@ -32,11 +48,13 @@ ctl.rbar = q_target
 cl_sys = ctl + sys
 
 cl_sys.state_label[2] = 'H'
-cl_sys.state_label[3] = 'g'
+cl_sys.state_label[3] = 'mgl'
+
+
 # Simultation
 cl_sys.x0[0]  = 0
 
-cl_sys.compute_trajectory(tf=10, n=20001, solver='euler')
+cl_sys.compute_trajectory(tf=20, n=20001) # solver='euler')
 cl_sys.plot_phase_plane_trajectory()
 cl_sys.plot_trajectory_with_internal_states()
 cl_sys.animate_simulation()
